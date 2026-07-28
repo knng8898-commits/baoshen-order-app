@@ -8,113 +8,91 @@
   <meta name="theme-color" content="#111827">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css">
-  <title>寶神叫貨助手</title>
+  <link rel="stylesheet" href="styles.css?v=4.0.0">
+  <title>寶神叫貨助手 v4</title>
 </head>
 <body>
-  <main class="app">
-    <header class="app-header">
-      <div>
-        <h1>📦 寶神叫貨助手</h1>
-        <p>門市、廠商、建議庫存與叫貨紀錄一次完成。</p>
+<main class="app">
+  <header class="app-header">
+    <div><h1>📦 寶神叫貨助手</h1><p>v4｜點貨、叫貨、圖片與管理設定</p></div>
+    <button id="installButton" class="ghost hidden">安裝 App</button>
+  </header>
+
+  <section class="card">
+    <div class="section-title">今日叫貨總覽</div>
+    <div id="dashboard" class="dashboard"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">門市與日期</div>
+    <div class="segmented" id="storeButtons"></div>
+    <div class="date-row">
+      <label>點貨日期<input type="date" id="workDate"></label>
+      <label>庫存建議<select id="stockProfile"><option value="auto">自動判斷</option><option value="weekday">平日</option><option value="holiday">假日</option></select></label>
+    </div>
+    <div id="dateSummary" class="date-summary"></div>
+  </section>
+
+  <section class="card sticky-vendors">
+    <div class="section-title">廠商快速切換</div>
+    <div class="vendor-grid" id="vendorButtons"></div>
+    <div id="vendorNotice"></div>
+  </section>
+
+  <section class="card">
+    <div class="mode-grid">
+      <button id="orderMode" class="mode-button">直接輸入叫貨量</button>
+      <button id="inventoryMode" class="mode-button">輸入目前庫存</button>
+    </div>
+    <div class="toolbar">
+      <button id="generateText" class="primary">產生 LINE 訊息</button>
+      <button id="generateImage">產生宏鑫訂貨圖片</button>
+      <button id="clearCurrent" class="danger">清空本廠商</button>
+    </div>
+    <div id="items"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">LINE 訊息預覽</div>
+    <textarea id="messageOutput" placeholder="按「產生 LINE 訊息」後顯示內容"></textarea>
+    <div class="two-buttons"><button id="copyMessage" class="primary">📋 複製內容</button><button id="saveHistory">💾 儲存紀錄</button></div>
+  </section>
+
+  <section class="card hidden" id="imageSection">
+    <div class="section-title">宏鑫訂貨明細表</div>
+    <canvas id="orderCanvas" width="1240" height="1754"></canvas>
+    <div class="two-buttons"><button id="downloadImage" class="primary">儲存圖片</button><button id="shareImage">分享圖片</button></div>
+    <p class="helper">iPhone 可按「分享圖片」直接傳送至 LINE，或選擇儲存影像。</p>
+  </section>
+
+  <section class="card">
+    <div class="history-header"><div class="section-title">最近叫貨紀錄</div><button id="clearHistory">清除紀錄</button></div>
+    <div id="history"></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>🔐 管理設定</summary>
+      <p class="helper">預設密碼 8888。建議庫存與臨時休假只儲存在目前裝置，請定期匯出備份。</p>
+      <div id="adminLogin" class="admin-row"><input id="adminPassword" type="password" placeholder="輸入管理密碼"><button id="unlockAdmin">解鎖</button></div>
+      <div id="adminPanel" class="hidden">
+        <div class="toolbar"><button id="lockAdmin">登出</button><button id="changePassword">修改密碼</button><button id="exportData">匯出設定</button><button id="importData">匯入設定</button><input type="file" id="importFile" accept="application/json" class="hidden"></div>
+        <hr>
+        <div class="section-title">建議庫存管理</div>
+        <div class="date-row"><label>門市<select id="adminStore"></select></label><label>廠商<select id="adminVendor"></select></label></div>
+        <div id="suggestedEditor"></div>
+        <div class="two-buttons"><button id="saveSuggested" class="primary">儲存建議庫存</button><button id="resetSuggested">恢復預設</button></div>
+        <hr>
+        <div class="section-title">各廠商臨時休假</div>
+        <div class="date-row"><label>廠商<select id="holidayVendor"></select></label><label>休假日期<input id="holidayDate" type="date"></label></div>
+        <button id="addHoliday" class="full-button">新增休假日期</button>
+        <div id="holidayList"></div>
       </div>
-      <button id="installButton" class="ghost hidden">安裝 App</button>
-    </header>
-
-    <section class="card">
-      <div class="section-title">門市</div>
-      <div class="segmented" id="storeButtons"></div>
-
-      <div class="date-row">
-        <label>
-          點貨日期
-          <input type="date" id="workDate">
-        </label>
-        <label>
-          庫存建議
-          <select id="stockProfile">
-            <option value="auto">自動判斷</option>
-            <option value="weekday">平日</option>
-            <option value="holiday">假日</option>
-          </select>
-        </label>
-      </div>
-
-      <div id="dateSummary" class="date-summary"></div>
-    </section>
-
-    <section class="card">
-      <div class="section-title">廠商</div>
-      <div class="vendor-grid" id="vendorButtons"></div>
-      <div id="vendorNotice"></div>
-    </section>
-
-    <section class="card">
-      <div class="mode-grid">
-        <button id="inventoryMode" class="mode-button">輸入目前庫存</button>
-        <button id="orderMode" class="mode-button">直接輸入叫貨量</button>
-      </div>
-
-      <div class="toolbar">
-        <button id="generateText" class="primary">產生 LINE 訊息</button>
-        <button id="generateImage">產生叫貨圖片</button>
-        <button id="clearCurrent" class="danger">清空本廠商</button>
-      </div>
-
-      <div id="items"></div>
-    </section>
-
-    <section class="card">
-      <div class="section-title">LINE 訊息預覽</div>
-      <textarea id="messageOutput" placeholder="按「產生 LINE 訊息」後顯示內容"></textarea>
-      <div class="two-buttons">
-        <button id="copyMessage" class="primary">📋 複製內容</button>
-        <button id="saveHistory">💾 儲存紀錄</button>
-      </div>
-    </section>
-
-    <section class="card hidden" id="imageSection">
-      <div class="section-title">叫貨圖片預覽</div>
-      <canvas id="orderCanvas" width="1400" height="1900"></canvas>
-      <div class="two-buttons">
-        <button id="downloadImage" class="primary">儲存圖片</button>
-        <button id="shareImage">分享圖片</button>
-      </div>
-      <p class="helper">iPhone 可按「分享圖片」後選擇「儲存影像」或直接傳送到 LINE。</p>
-    </section>
-
-    <section class="card">
-      <div class="history-header">
-        <div class="section-title">最近叫貨紀錄</div>
-        <button id="clearHistory">清除紀錄</button>
-      </div>
-      <div id="history"></div>
-    </section>
-
-    <section class="card">
-      <details>
-        <summary>管理設定</summary>
-        <p class="helper">可設定臨時休假與建議量。設定只儲存在目前這台裝置。</p>
-        <div class="admin-row">
-          <input id="adminPassword" type="password" placeholder="輸入管理密碼">
-          <button id="unlockAdmin">解鎖</button>
-        </div>
-        <div id="adminPanel" class="hidden">
-          <label class="block-label">臨時休假日期（每行一個 YYYY-MM-DD）</label>
-          <textarea id="temporaryClosures" class="small-textarea"></textarea>
-          <div class="two-buttons">
-            <button id="saveTemporaryClosures">儲存臨時休假</button>
-            <button id="exportData">匯出設定</button>
-          </div>
-          <p class="helper">預設管理密碼：8888。正式使用後建議自行修改程式內密碼。</p>
-        </div>
-      </details>
-    </section>
-  </main>
-
-  <div id="toast" class="toast"></div>
-
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+    </details>
+  </section>
+</main>
+<div id="toast" class="toast"></div>
+<script src="data.js?v=4.0.0"></script>
+<script src="app.js?v=4.0.0"></script>
 </body>
 </html>
