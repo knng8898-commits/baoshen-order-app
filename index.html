@@ -4,879 +4,117 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#f3f4f6">
-
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#111827">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
   <title>寶神叫貨助手</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: #f3f4f6;
-      color: #111827;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-        "PingFang TC", "Noto Sans TC", sans-serif;
-    }
-
-    .app {
-      width: 100%;
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 18px 14px 50px;
-    }
-
-    h1 {
-      margin: 4px 0;
-      font-size: 26px;
-    }
-
-    .description {
-      margin-bottom: 16px;
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    .card {
-      margin-bottom: 14px;
-      padding: 16px;
-      background: white;
-      border-radius: 18px;
-      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.06);
-    }
-
-    .vendor-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-    }
-
-    .vendor-button {
-      padding: 15px;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      background: white;
-      color: #111827;
-      font-size: 17px;
-      font-weight: 700;
-      text-align: left;
-      cursor: pointer;
-    }
-
-    .vendor-button.active {
-      background: #111827;
-      color: white;
-      border-color: #111827;
-    }
-
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    button {
-      padding: 11px 14px;
-      border: 0;
-      border-radius: 12px;
-      background: #e5e7eb;
-      color: #111827;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    button.primary {
-      background: #111827;
-      color: white;
-    }
-
-    button.danger {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-
-    .group-title {
-      margin: 18px 0 6px;
-      color: #374151;
-      font-size: 16px;
-      font-weight: 800;
-    }
-
-    .item {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      gap: 12px;
-      padding: 13px 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .item-name {
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .item-note {
-      margin-top: 3px;
-      color: #6b7280;
-      font-size: 12px;
-    }
-
-    .stepper {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .stepper button {
-      width: 38px;
-      height: 38px;
-      padding: 0;
-      font-size: 22px;
-    }
-
-    .quantity {
-      width: 64px;
-      padding: 9px 5px;
-      border: 1px solid #d1d5db;
-      border-radius: 10px;
-      font-size: 17px;
-      font-weight: 700;
-      text-align: center;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 260px;
-      padding: 14px;
-      border: 1px solid #d1d5db;
-      border-radius: 14px;
-      font-family: inherit;
-      font-size: 16px;
-      line-height: 1.6;
-      resize: vertical;
-    }
-
-    .output-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .history-item {
-      margin-top: 10px;
-      padding: 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      cursor: pointer;
-    }
-
-    .history-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .history-vendor {
-      font-weight: 800;
-    }
-
-    .history-time {
-      color: #6b7280;
-      font-size: 12px;
-    }
-
-    .history-text {
-      max-height: 130px;
-      overflow: auto;
-      color: #374151;
-      font-size: 13px;
-      white-space: pre-wrap;
-    }
-
-    .empty {
-      padding: 20px 0;
-      color: #6b7280;
-      text-align: center;
-    }
-
-    .toast {
-      position: fixed;
-      left: 50%;
-      bottom: 30px;
-      padding: 11px 17px;
-      border-radius: 100px;
-      background: #111827;
-      color: white;
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(-50%);
-      transition: 0.2s;
-    }
-
-    .toast.show {
-      opacity: 1;
-    }
-
-    @media (max-width: 480px) {
-      .vendor-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .output-actions {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
 </head>
-
 <body>
   <main class="app">
-    <h1>📦 寶神叫貨助手</h1>
-    <div class="description">
-      選擇廠商並輸入數量，數量為 0 的商品不會出現在訊息中。
-    </div>
+    <header class="app-header">
+      <div>
+        <h1>📦 寶神叫貨助手</h1>
+        <p>門市、廠商、建議庫存與叫貨紀錄一次完成。</p>
+      </div>
+      <button id="installButton" class="ghost hidden">安裝 App</button>
+    </header>
 
     <section class="card">
-      <div class="vendor-grid" id="vendorGrid"></div>
+      <div class="section-title">門市</div>
+      <div class="segmented" id="storeButtons"></div>
+
+      <div class="date-row">
+        <label>
+          點貨日期
+          <input type="date" id="workDate">
+        </label>
+        <label>
+          庫存建議
+          <select id="stockProfile">
+            <option value="auto">自動判斷</option>
+            <option value="weekday">平日</option>
+            <option value="holiday">假日</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="dateSummary" class="date-summary"></div>
     </section>
 
     <section class="card">
+      <div class="section-title">廠商</div>
+      <div class="vendor-grid" id="vendorButtons"></div>
+      <div id="vendorNotice"></div>
+    </section>
+
+    <section class="card">
+      <div class="mode-grid">
+        <button id="inventoryMode" class="mode-button">輸入目前庫存</button>
+        <button id="orderMode" class="mode-button">直接輸入叫貨量</button>
+      </div>
+
       <div class="toolbar">
-        <button class="primary" id="generateButton">
-          產生 LINE 訊息
-        </button>
-
-        <button id="restoreButton">
-          載入上次數量
-        </button>
-
-        <button class="danger" id="clearButton">
-          全部清空
-        </button>
+        <button id="generateText" class="primary">產生 LINE 訊息</button>
+        <button id="generateImage">產生叫貨圖片</button>
+        <button id="clearCurrent" class="danger">清空本廠商</button>
       </div>
 
       <div id="items"></div>
     </section>
 
     <section class="card">
-      <h2 style="margin-top:0;font-size:19px;">
-        LINE 訊息預覽
-      </h2>
-
-      <textarea
-        id="output"
-        placeholder="按下「產生 LINE 訊息」後，內容會顯示在這裡。"
-      ></textarea>
-
-      <div class="output-actions">
-        <button class="primary" id="copyButton">
-          📋 複製內容
-        </button>
-
-        <button id="saveHistoryButton">
-          💾 儲存叫貨紀錄
-        </button>
+      <div class="section-title">LINE 訊息預覽</div>
+      <textarea id="messageOutput" placeholder="按「產生 LINE 訊息」後顯示內容"></textarea>
+      <div class="two-buttons">
+        <button id="copyMessage" class="primary">📋 複製內容</button>
+        <button id="saveHistory">💾 儲存紀錄</button>
       </div>
+    </section>
+
+    <section class="card hidden" id="imageSection">
+      <div class="section-title">叫貨圖片預覽</div>
+      <canvas id="orderCanvas" width="1400" height="1900"></canvas>
+      <div class="two-buttons">
+        <button id="downloadImage" class="primary">儲存圖片</button>
+        <button id="shareImage">分享圖片</button>
+      </div>
+      <p class="helper">iPhone 可按「分享圖片」後選擇「儲存影像」或直接傳送到 LINE。</p>
     </section>
 
     <section class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-        <h2 style="margin:0;font-size:19px;">
-          最近叫貨紀錄
-        </h2>
-
-        <button id="clearHistoryButton">
-          清除紀錄
-        </button>
+      <div class="history-header">
+        <div class="section-title">最近叫貨紀錄</div>
+        <button id="clearHistory">清除紀錄</button>
       </div>
-
       <div id="history"></div>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>管理設定</summary>
+        <p class="helper">可設定臨時休假與建議量。設定只儲存在目前這台裝置。</p>
+        <div class="admin-row">
+          <input id="adminPassword" type="password" placeholder="輸入管理密碼">
+          <button id="unlockAdmin">解鎖</button>
+        </div>
+        <div id="adminPanel" class="hidden">
+          <label class="block-label">臨時休假日期（每行一個 YYYY-MM-DD）</label>
+          <textarea id="temporaryClosures" class="small-textarea"></textarea>
+          <div class="two-buttons">
+            <button id="saveTemporaryClosures">儲存臨時休假</button>
+            <button id="exportData">匯出設定</button>
+          </div>
+          <p class="helper">預設管理密碼：8888。正式使用後建議自行修改程式內密碼。</p>
+        </div>
+      </details>
     </section>
   </main>
 
-  <div class="toast" id="toast"></div>
+  <div id="toast" class="toast"></div>
 
-  <script>
-    const vendors = {
-      "西北": {
-        header: "西北",
-        footer: "謝謝",
-        groups: [
-          {
-            title: "一般品項",
-            items: [
-              { name: "麻吉燒芝麻", unit: "包" },
-              { name: "麻吉燒花生", unit: "包" },
-              { name: "原味水晶餃", unit: "包" },
-              { name: "芋頭角", unit: "包" },
-              { name: "甜不辣", unit: "包" }
-            ]
-          },
-          {
-            title: "強強滾",
-            outputTitle: "強強滾：",
-            items: [
-              { name: "蝦餃", unit: "包" },
-              { name: "燕餃", unit: "包" },
-              { name: "魚餃", unit: "包" },
-              { name: "翡翠蝦球", unit: "包" },
-              { name: "鼠來寶", unit: "包" },
-              { name: "A級球", unit: "包" },
-              { name: "北海刺", unit: "包" },
-              { name: "黃金魚蛋", unit: "包" },
-              { name: "跳跳蝦", unit: "包" },
-              { name: "魚板", unit: "包" },
-              { name: "魚卵卷", unit: "包" },
-              { name: "鑫鑫腸", unit: "包" }
-            ]
-          }
-        ]
-      },
-
-      "統賀": {
-        header: "寶神松隆店 明天要",
-        footer: "感謝",
-        groups: [
-          {
-            title: "肉品",
-            items: [
-              { name: "梅花豬", unit: "條", note: "對切" },
-              { name: "精選雞", unit: "條", note: "對切" },
-              { name: "精選羊", unit: "條", note: "對切" },
-              { name: "松阪豬", unit: "條", note: "對切" },
-              { name: "雪花羊", unit: "條", note: "對切" },
-              { name: "菲力豬", unit: "條" }
-            ]
-          }
-        ]
-      },
-
-      "樹森": {
-        header: "您好 寶神信義松隆店 明天要",
-        footer: "感謝",
-        groups: [
-          {
-            title: "肉品",
-            items: [
-              { name: "霜降牛", unit: "條", note: "十字切" },
-              { name: "小肥牛", unit: "條", note: "十字切" },
-              { name: "培根豬", unit: "條", note: "十字切" },
-              { name: "莎朗牛", unit: "條", note: "對切" },
-              { name: "板腱牛", unit: "條", note: "對切" },
-              { name: "雪花牛", unit: "條", note: "對切（挑小）" },
-              { name: "小羔羊", unit: "條", note: "對切" },
-              { name: "牛小排", unit: "條" },
-              { name: "A5和牛", unit: "條" },
-              { name: "去骨雞腿", unit: "件" }
-            ]
-          }
-        ]
-      },
-
-      "何仙姑": {
-        header: "寶神信義松隆店",
-        footer: "謝謝",
-        groups: [
-          {
-            title: "菇類",
-            items: [
-              { name: "香菇", unit: "斤" },
-              { name: "金針菇", unit: "包" },
-              { name: "杏鮑菇", unit: "包" },
-              { name: "木耳", unit: "斤" }
-            ]
-          }
-        ]
-      },
-
-      "總部": {
-        header: "寶神信義松隆店 明天要",
-        footer: "謝謝",
-        groups: [
-          {
-            title: "總部品項",
-            items: [
-              { name: "大骨", unit: "桶" },
-              { name: "醬油", unit: "桶" },
-              { name: "高湯粉 全", unit: "箱" },
-              { name: "高湯粉1/4", unit: "箱" },
-              { name: "高湯粉1/2", unit: "箱" },
-              { name: "養生包", unit: "包" },
-              { name: "麻辣香粉", unit: "包" }
-            ]
-          }
-        ]
-      }
-    };
-
-    let currentVendor =
-      localStorage.getItem("baoshen_current_vendor") || "西北";
-
-    const vendorGrid = document.getElementById("vendorGrid");
-    const itemsContainer = document.getElementById("items");
-    const output = document.getElementById("output");
-
-    function storageKey(vendor, itemName) {
-      return `baoshen_quantity_${vendor}_${itemName}`;
-    }
-
-    function showToast(message) {
-      const toast = document.getElementById("toast");
-
-      toast.textContent = message;
-      toast.classList.add("show");
-
-      setTimeout(() => {
-        toast.classList.remove("show");
-      }, 1600);
-    }
-
-    function renderVendors() {
-      vendorGrid.innerHTML = "";
-
-      Object.keys(vendors).forEach((vendorName) => {
-        const button = document.createElement("button");
-
-        button.className =
-          "vendor-button" +
-          (vendorName === currentVendor ? " active" : "");
-
-        button.textContent = vendorName;
-
-        button.addEventListener("click", () => {
-          saveCurrentQuantities();
-
-          currentVendor = vendorName;
-
-          localStorage.setItem(
-            "baoshen_current_vendor",
-            currentVendor
-          );
-
-          output.value = "";
-
-          renderVendors();
-          renderItems();
-        });
-
-        vendorGrid.appendChild(button);
-      });
-    }
-
-    function renderItems() {
-      itemsContainer.innerHTML = "";
-
-      const vendor = vendors[currentVendor];
-
-      vendor.groups.forEach((group) => {
-        const title = document.createElement("div");
-
-        title.className = "group-title";
-        title.textContent = group.title;
-
-        itemsContainer.appendChild(title);
-
-        group.items.forEach((item) => {
-          const row = document.createElement("div");
-
-          row.className = "item";
-
-          const information = document.createElement("div");
-
-          information.innerHTML = `
-            <div class="item-name">${item.name}</div>
-            <div class="item-note">
-              ${item.unit}${item.note ? "・" + item.note : ""}
-            </div>
-          `;
-
-          const stepper = document.createElement("div");
-
-          stepper.className = "stepper";
-
-          const minusButton = document.createElement("button");
-
-          minusButton.textContent = "−";
-
-          const quantityInput = document.createElement("input");
-
-          quantityInput.type = "number";
-          quantityInput.min = "0";
-          quantityInput.className = "quantity";
-          quantityInput.dataset.itemName = item.name;
-
-          quantityInput.value =
-            localStorage.getItem(
-              storageKey(currentVendor, item.name)
-            ) || "0";
-
-          const plusButton = document.createElement("button");
-
-          plusButton.textContent = "+";
-
-          minusButton.addEventListener("click", () => {
-            const currentValue =
-              Number(quantityInput.value) || 0;
-
-            quantityInput.value =
-              Math.max(0, currentValue - 1);
-
-            saveCurrentQuantities();
-          });
-
-          plusButton.addEventListener("click", () => {
-            const currentValue =
-              Number(quantityInput.value) || 0;
-
-            quantityInput.value = currentValue + 1;
-
-            saveCurrentQuantities();
-          });
-
-          quantityInput.addEventListener(
-            "input",
-            saveCurrentQuantities
-          );
-
-          stepper.appendChild(minusButton);
-          stepper.appendChild(quantityInput);
-          stepper.appendChild(plusButton);
-
-          row.appendChild(information);
-          row.appendChild(stepper);
-
-          itemsContainer.appendChild(row);
-        });
-      });
-    }
-
-    function saveCurrentQuantities() {
-      document
-        .querySelectorAll(".quantity")
-        .forEach((input) => {
-          localStorage.setItem(
-            storageKey(
-              currentVendor,
-              input.dataset.itemName
-            ),
-            input.value || "0"
-          );
-        });
-    }
-
-    function getQuantity(itemName) {
-      const input = Array.from(
-        document.querySelectorAll(".quantity")
-      ).find(
-        (element) =>
-          element.dataset.itemName === itemName
-      );
-
-      return input ? Number(input.value || 0) : 0;
-    }
-
-    function generateMessage() {
-      saveCurrentQuantities();
-
-      const vendor = vendors[currentVendor];
-      const sections = [];
-
-      if (currentVendor === "西北") {
-        const generalItems = [];
-
-        const sesameQuantity =
-          getQuantity("麻吉燒芝麻");
-
-        const peanutQuantity =
-          getQuantity("麻吉燒花生");
-
-        if (
-          sesameQuantity > 0 ||
-          peanutQuantity > 0
-        ) {
-          const parts = [];
-
-          if (sesameQuantity > 0) {
-            parts.push(`芝麻${sesameQuantity}包`);
-          }
-
-          if (peanutQuantity > 0) {
-            parts.push(`花生${peanutQuantity}包`);
-          }
-
-          generalItems.push(
-            `麻吉燒${parts.join(" ")}`
-          );
-        }
-
-        ["原味水晶餃", "芋頭角", "甜不辣"].forEach(
-          (itemName) => {
-            const quantity = getQuantity(itemName);
-
-            if (quantity > 0) {
-              generalItems.push(
-                `${itemName}${quantity}包`
-              );
-            }
-          }
-        );
-
-        if (generalItems.length > 0) {
-          sections.push(generalItems.join("\n"));
-        }
-
-        const strongItems = [];
-
-        vendors["西北"].groups[1].items.forEach(
-          (item) => {
-            const quantity = getQuantity(item.name);
-
-            if (quantity > 0) {
-              strongItems.push(
-                `${item.name}${quantity}${item.unit}`
-              );
-            }
-          }
-        );
-
-        if (strongItems.length > 0) {
-          sections.push(
-            `強強滾：\n${strongItems.join("\n")}`
-          );
-        }
-      } else {
-        const lines = [];
-
-        vendor.groups.forEach((group) => {
-          group.items.forEach((item) => {
-            const quantity = getQuantity(item.name);
-
-            if (quantity > 0) {
-              lines.push(
-                `${item.name}${quantity}${item.unit}` +
-                  `${item.note ? " " + item.note : ""}`
-              );
-            }
-          });
-        });
-
-        if (lines.length > 0) {
-          sections.push(lines.join("\n"));
-        }
-      }
-
-      output.value =
-        `${vendor.header}\n\n` +
-        `${sections.join("\n\n")}\n\n` +
-        `${vendor.footer}`;
-
-      showToast("已產生 LINE 訊息");
-    }
-
-    function clearAllQuantities() {
-      document
-        .querySelectorAll(".quantity")
-        .forEach((input) => {
-          input.value = 0;
-
-          localStorage.setItem(
-            storageKey(
-              currentVendor,
-              input.dataset.itemName
-            ),
-            "0"
-          );
-        });
-
-      output.value = "";
-
-      showToast("已全部清空");
-    }
-
-    function restoreLastQuantities() {
-      renderItems();
-
-      showToast("已載入上次數量");
-    }
-
-    async function copyMessage() {
-      if (!output.value.trim()) {
-        generateMessage();
-      }
-
-      try {
-        await navigator.clipboard.writeText(
-          output.value
-        );
-
-        showToast("已複製，可以貼到 LINE");
-      } catch (error) {
-        output.select();
-
-        document.execCommand("copy");
-
-        showToast("已複製，可以貼到 LINE");
-      }
-    }
-
-    function saveHistory() {
-      if (!output.value.trim()) {
-        generateMessage();
-      }
-
-      const history = JSON.parse(
-        localStorage.getItem(
-          "baoshen_order_history"
-        ) || "[]"
-      );
-
-      history.unshift({
-        vendor: currentVendor,
-        time: new Date().toLocaleString("zh-TW"),
-        text: output.value
-      });
-
-      localStorage.setItem(
-        "baoshen_order_history",
-        JSON.stringify(history.slice(0, 30))
-      );
-
-      renderHistory();
-
-      showToast("已儲存叫貨紀錄");
-    }
-
-    function escapeHtml(text) {
-      return text.replace(
-        /[&<>"']/g,
-        (character) =>
-          ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#039;"
-          })[character]
-      );
-    }
-
-    function renderHistory() {
-      const historyContainer =
-        document.getElementById("history");
-
-      const history = JSON.parse(
-        localStorage.getItem(
-          "baoshen_order_history"
-        ) || "[]"
-      );
-
-      if (history.length === 0) {
-        historyContainer.innerHTML =
-          '<div class="empty">目前沒有叫貨紀錄</div>';
-
-        return;
-      }
-
-      historyContainer.innerHTML = "";
-
-      history.forEach((record) => {
-        const item = document.createElement("div");
-
-        item.className = "history-item";
-
-        item.innerHTML = `
-          <div class="history-top">
-            <div class="history-vendor">
-              ${record.vendor}
-            </div>
-
-            <div class="history-time">
-              ${record.time}
-            </div>
-          </div>
-
-          <div class="history-text">
-            ${escapeHtml(record.text)}
-          </div>
-        `;
-
-        item.addEventListener("click", () => {
-          currentVendor = record.vendor;
-
-          localStorage.setItem(
-            "baoshen_current_vendor",
-            currentVendor
-          );
-
-          renderVendors();
-          renderItems();
-
-          output.value = record.text;
-
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-          });
-        });
-
-        historyContainer.appendChild(item);
-      });
-    }
-
-    document
-      .getElementById("generateButton")
-      .addEventListener("click", generateMessage);
-
-    document
-      .getElementById("restoreButton")
-      .addEventListener(
-        "click",
-        restoreLastQuantities
-      );
-
-    document
-      .getElementById("clearButton")
-      .addEventListener(
-        "click",
-        clearAllQuantities
-      );
-
-    document
-      .getElementById("copyButton")
-      .addEventListener("click", copyMessage);
-
-    document
-      .getElementById("saveHistoryButton")
-      .addEventListener("click", saveHistory);
-
-    document
-      .getElementById("clearHistoryButton")
-      .addEventListener("click", () => {
-        const confirmed = confirm(
-          "確定要清除所有叫貨紀錄嗎？"
-        );
-
-        if (confirmed) {
-          localStorage.removeItem(
-            "baoshen_order_history"
-          );
-
-          renderHistory();
-
-          showToast("叫貨紀錄已清除");
-        }
-      });
-
-    renderVendors();
-    renderItems();
-    renderHistory();
-  </script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
