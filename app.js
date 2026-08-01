@@ -69,14 +69,141 @@ function messageHeader(){const vendor=APP_DATA.vendors[state.vendor],store=store
 if (vendor.header === "vendor")
     return state.vendor;if(vendor.header==="helloTomorrow")return `您好 ${store} 明天要`;if(vendor.header==="tomorrow")return `${store} 明天要`;return store
   }
-function generateMessage(){
-  saveCurrentInputs();if(!vendorStatus().allowed){showToast("今日不可叫貨");return""}const vendor=APP_DATA.vendors[state.vendor],sections=[];
-  if(state.vendor==="西北"){
-    const general=[],sesame=allItems().find(i=>i.name==="麻吉燒芝麻"),peanut=allItems().find(i=>i.name==="麻吉燒花生"),parts=[];const sq=orderQuantity(sesame),pq=orderQuantity(peanut);if(sq>0)parts.push(`芝麻 ${sq}包`);if(pq>0)parts.push(`花生 ${pq}包`);if(parts.length)general.push(`麻吉燒 ${parts.join("、")}`);["原味水晶餃","芋頭角","甜不辣"].forEach(name=>{const i=allItems().find(x=>x.name===name),q=orderQuantity(i);if(q>0)general.push(`${name} ${q}${i.unit}`)});if(general.length)sections.push(general.join("\n"));const strong=APP_DATA.vendors["西北"].groups[1].items.map(i=>{const q=orderQuantity(i);return q>0?`${i.name} ${q}${i.unit}`:null}).filter(Boolean);if(strong.length)sections.push(`強強滾：\n${strong.join("\n")}`)
-  }else vendor.groups.forEach(group=>{const lines=group.items.map(i=>{const q=orderQuantity(i);return q>0?`${i.name} ${q}${i.unit}${i.note?" "+i.note:""}`:null}).filter(Boolean);if(lines.length)sections.push((group.outputTitle?group.outputTitle+"\n":"")+lines.join("\n"))});
-  if(!sections.length){$("messageOutput").value="";showToast("目前沒有需要叫貨的品項");return""}const msg=`${messageHeader()}\n\n${sections.join("\n\n")}\n\n${vendor.footer}`;$("messageOutput").value=msg;showToast("已產生 LINE 訊息");return msg
+  function generateMessage() {
+  saveCurrentInputs();
+
+  if (!vendorStatus().allowed) {
+    showToast("今日不可叫貨");
+    return "";
+  }
+
+  const vendor = APP_DATA.vendors[state.vendor];
+  const sections = [];
+
+  // 西北專用格式
+  if (state.vendor === "西北") {
+    const general = [];
+
+    const sesame = allItems().find(
+      (item) => item.name === "麻吉燒芝麻"
+    );
+
+    const peanut = allItems().find(
+      (item) => item.name === "麻吉燒花生"
+    );
+
+    const parts = [];
+
+    const sesameQuantity = orderQuantity(sesame);
+    const peanutQuantity = orderQuantity(peanut);
+
+    if (sesameQuantity > 0) {
+      parts.push(`芝麻 ${sesameQuantity}包`);
+    }
+
+    if (peanutQuantity > 0) {
+      parts.push(`花生 ${peanutQuantity}包`);
+    }
+
+    if (parts.length) {
+      general.push(`麻吉燒 ${parts.join("、")}`);
+    }
+
+    ["原味水晶餃", "芋頭角", "甜不辣"].forEach((name) => {
+      const item = allItems().find((entry) => entry.name === name);
+
+      if (!item) return;
+
+      const quantity = orderQuantity(item);
+
+      if (quantity > 0) {
+        general.push(`${name} ${quantity}${item.unit}`);
+      }
+    });
+
+    if (general.length) {
+      sections.push(general.join("\n"));
+    }
+
+    const strong = APP_DATA.vendors["西北"].groups[1].items
+      .map((item) => {
+        const quantity = orderQuantity(item);
+
+        return quantity > 0
+          ? `${item.name} ${quantity}${item.unit}`
+          : null;
+      })
+      .filter(Boolean);
+
+    if (strong.length) {
+      sections.push(`強強滾：\n${strong.join("\n")}`);
+    }
+
+  // 何仙姑專用格式
+  } else if (state.vendor === "何仙姑") {
+    const lines = [];
+
+    const displayRules = {
+      金針菇: (quantity) => `金針菇（五斤裝）*${quantity}`,
+      杏鮑菇: (quantity) => `杏鮑菇*${quantity}`,
+      木耳: (quantity) => `木耳*${quantity}斤`,
+      香菇: (quantity) => `香菇*${quantity}斤`,
+    };
+
+    allItems().forEach((item) => {
+      const quantity = orderQuantity(item);
+      const format = displayRules[item.name];
+
+      if (quantity > 0 && format) {
+        lines.push(format(quantity));
+      }
+    });
+
+    if (lines.length) {
+      sections.push(lines.join("\n"));
+    }
+
+  // 其他廠商一般格式
+  } else {
+    vendor.groups.forEach((group) => {
+      const lines = group.items
+        .map((item) => {
+          const quantity = orderQuantity(item);
+
+          if (quantity <= 0) return null;
+
+          return `${item.name} ${quantity}${item.unit}${
+            item.note ? ` ${item.note}` : ""
+          }`;
+        })
+        .filter(Boolean);
+
+      if (lines.length) {
+        const title = group.outputTitle
+          ? `${group.outputTitle}\n`
+          : "";
+
+        sections.push(title + lines.join("\n"));
+      }
+    });
+  }
+
+  if (!sections.length) {
+    $("messageOutput").value = "";
+    showToast("目前沒有需要叫貨的品項");
+    return "";
+  }
+
+  const message =
+    `${messageHeader()}\n\n` +
+    `${sections.join("\n\n")}\n\n` +
+    `${vendor.footer}`;
+
+  $("messageOutput").value = message;
+  showToast("已產生 LINE 訊息");
+
+  return message;
 }
-function clearCurrent(){if(!confirm(`確定清空「${storeLabel(state.store)}・${state.vendor}」嗎？`))return;allItems().forEach(i=>localStorage.setItem(quantityKey(i.name),"0"));$("messageOutput").value="";renderItems();showToast("已清空")}
 async function copyMessage(){if(!$("messageOutput").value.trim())generateMessage();if(!$("messageOutput").value.trim())return;try{await navigator.clipboard.writeText($("messageOutput").value)}catch{$("messageOutput").select();document.execCommand("copy")}showToast("已複製，可以貼到 LINE")}
 function saveHistory(){if(!$("messageOutput").value.trim())generateMessage();if(!$("messageOutput").value.trim())return;const h=JSON.parse(localStorage.getItem("baoshen_history")||"[]");h.unshift({store:state.store,vendor:state.vendor,time:new Date().toLocaleString("zh-TW"),text:$("messageOutput").value});localStorage.setItem("baoshen_history",JSON.stringify(h.slice(0,50)));renderHistory();if(confirm("紀錄已儲存。是否完成此次叫貨並清空本廠商數量？")){allItems().forEach(i=>localStorage.setItem(quantityKey(i.name),"0"));renderItems()}showToast("已儲存叫貨紀錄")}
 function renderHistory(){const box=$("history"),h=JSON.parse(localStorage.getItem("baoshen_history")||"[]");if(!h.length){box.innerHTML='<div class="empty">目前沒有叫貨紀錄</div>';return}box.innerHTML=h.map(r=>`<div class="history-item"><div class="history-top"><div class="history-title">${escapeHtml(storeLabel(r.store))}・${escapeHtml(r.vendor)}</div><div class="history-time">${escapeHtml(r.time)}</div></div><div class="history-text">${escapeHtml(r.text)}</div></div>`).join("")}
