@@ -60,7 +60,15 @@ function renderItems(){
   })})
 }
 function orderQuantity(item){const val=Number(localStorage.getItem(quantityKey(item.name))||0);return state.mode==="inventory"?Math.max(0,suggested(item)-val):val}
-function messageHeader(){const vendor=APP_DATA.vendors[state.vendor],store=storeLabel(state.store);if(vendor.header==="vendor")return state.vendor;if(vendor.header==="helloTomorrow")return `您好 ${store} 明天要`;if(vendor.header==="tomorrow")return `${store} 明天要`;return store}
+function messageHeader(){const vendor=APP_DATA.vendors[state.vendor],store=storeLabel(state.store);if (state.vendor === "西北") {
+    return state.store === "songlong"
+        ? "CR18049寶神松隆"
+        : "CR22779寶神松德";
+}
+
+if (vendor.header === "vendor")
+    return state.vendor;if(vendor.header==="helloTomorrow")return `您好 ${store} 明天要`;if(vendor.header==="tomorrow")return `${store} 明天要`;return store
+  }
 function generateMessage(){
   saveCurrentInputs();if(!vendorStatus().allowed){showToast("今日不可叫貨");return""}const vendor=APP_DATA.vendors[state.vendor],sections=[];
   if(state.vendor==="西北"){
