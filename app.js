@@ -80,9 +80,61 @@ function renderItems(){
   $("inventoryMode").classList.toggle("active",state.mode==="inventory");$("orderMode").classList.toggle("active",state.mode==="order");$("generateImage").style.display=APP_DATA.vendors[state.vendor].image?"inline-block":"none";
   const box=$("items");box.innerHTML="";
   APP_DATA.vendors[state.vendor].groups.forEach(group=>{const title=document.createElement("div");title.className="group-title";title.textContent=group.title;box.appendChild(title);group.items.forEach(item=>{
-    const saved=Number(localStorage.getItem(quantityKey(item.name))||0),target=suggested(item);const row=document.createElement("div");row.className="item";
-    const info=document.createElement("div");info.innerHTML=`<div class="item-name">${escapeHtml(item.name)}</div><div class="item-meta">單位：${escapeHtml(item.unit)}${item.note?"・"+escapeHtml(item.note):""}</div>${item.weekday!==undefined||item.holiday!==undefined?`<div class="item-suggested">建議庫存：${target}${escapeHtml(item.unit)}</div>`:""}${state.mode==="inventory"&&saved===0?'<div class="item-warning">請確認：目前庫存為 0</div>':""}`;
-    const step=document.createElement("div");step.className="stepper";const minus=document.createElement("button"),input=document.createElement("input"),plus=document.createElement("button");minus.textContent="−";plus.textContent="+";input.type="number";input.min="0";input.className="quantity";input.dataset.itemName=item.name;input.value=saved;
+    const saved = Number(
+  localStorage.getItem(quantityKey(item.name)) || 0
+);
+
+const target = suggested(item);
+
+const weekdayTarget = suggested(
+  item,
+  state.store,
+  state.vendor,
+  "weekday"
+);
+
+const holidayTarget = suggested(
+  item,
+  state.store,
+  state.vendor,
+  "holiday"
+);const row=document.createElement("div");row.className="item";
+const info = document.createElement("div");
+
+let suggestedDisplay = "";
+
+if (item.weekday !== undefined || item.holiday !== undefined) {
+  if (state.vendor === "宏鑫") {
+suggestedDisplay = `
+  <div class="item-suggested">
+    <div>平日建議庫存：${weekdayTarget}${escapeHtml(item.unit)}</div>
+    <div>假日建議庫存：${holidayTarget}${escapeHtml(item.unit)}</div>
+  </div>
+`;  } else {
+    suggestedDisplay = `
+      <div class="item-suggested">
+        建議庫存：${target}${escapeHtml(item.unit)}
+      </div>
+    `;
+  }
+}
+
+info.innerHTML = `
+  <div class="item-name">${escapeHtml(item.name)}</div>
+
+  <div class="item-meta">
+    單位：${escapeHtml(item.unit)}
+    ${item.note ? "・" + escapeHtml(item.note) : ""}
+  </div>
+
+  ${suggestedDisplay}
+
+  ${
+    state.mode === "inventory" && saved === 0
+      ? '<div class="item-warning">請確認：目前庫存為 0</div>'
+      : ""
+  }
+`;    const step=document.createElement("div");step.className="stepper";const minus=document.createElement("button"),input=document.createElement("input"),plus=document.createElement("button");minus.textContent="−";plus.textContent="+";input.type="number";input.min="0";input.className="quantity";input.dataset.itemName=item.name;input.value=saved;
     const update=delta=>{input.value=Math.max(0,(Number(input.value)||0)+delta);localStorage.setItem(quantityKey(item.name),input.value);renderItems()};minus.onclick=()=>update(-1);plus.onclick=()=>update(1);input.oninput=()=>localStorage.setItem(quantityKey(item.name),String(Math.max(0,Number(input.value)||0)));input.onchange=()=>{input.value=Math.max(0,Number(input.value)||0);localStorage.setItem(quantityKey(item.name),input.value);renderItems()};step.append(minus,input,plus);
     if(state.mode==="inventory"){const r=document.createElement("div");r.className="order-result";r.textContent=`叫 ${Math.max(0,target-saved)}${item.unit}`;step.appendChild(r)}row.append(info,step);box.appendChild(row)
   })})
