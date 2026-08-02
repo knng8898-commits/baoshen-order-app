@@ -14,65 +14,211 @@ function suggested(item,store=state.store,vendor=state.vendor,profile=effectiveP
 function holidayKey(vendor){return `baoshen_holidays_${vendor}`}
 function holidays(vendor){try{return JSON.parse(localStorage.getItem(holidayKey(vendor))||"[]")}catch{return[]}}
 function isLastDayOfClosure(date,closed){const ds=localDateString(date);return closed.includes(ds)&&!closed.includes(localDateString(addDays(date,1)))}
-function vendorStatus(vendorName=state.vendor,date=getSelectedDate()){
-  const vendor=APP_DATA.vendors[vendorName],ds=localDateString(date),day=date.getDay(),cutoff=vendor.cutoff?`，截止 ${vendor.cutoff}`:"";
-  const temp=holidays(vendorName);
-  if(temp.includes(ds)){if(isLastDayOfClosure(date,temp))return{type:"info",text:`ℹ️ 臨時休假最後一天，可下單安排後續配送${cutoff}`,allowed:true};return{type:"danger",text:"🚫 今日臨時休假",allowed:false}}
-  if(temp.includes(localDateString(addDays(date,1))))return{type:"danger",text:"🚫 明日臨時休假，今天不收單",allowed:false};
-  if (vendor.rule === "sunday") {
-  // 星期五提醒備足週末貨量
-  if (day === 5) {
-    return {
-      type: "warn",
-      text: `⚠️ 今天是最後叫貨日，請備足週末貨量${cutoff}`,
-      allowed: true
-    };
-  }
+function vendorStatus(
+  vendorName = state.vendor,
+  date = getSelectedDate()
+) {
+  const vendor = APP_DATA.vendors[vendorName];
+  const ds = localDateString(date);
+  const day = date.getDay();
 
-  // 星期六完全不能叫貨
-  if (day === 6) {
+  const cutoff = vendor.cutoff
+    ? `，截止 ${vendor.cutoff}`
+    : "";
+
+  // 管理者自行設定的臨時休假
+  const temp = holidays(vendorName);
+
+  // 臨時休假期間
+  if (temp.includes(ds)) {
+    // 連續休假的最後一天＝明天開工，可以叫貨
+    if (isLastDayOfClosure(date, temp)) {
+      return {
+        type: "info",
+        text: `ℹ️ 臨時休假最後一天，可下單安排後續配送${cutoff}`,
+        allowed: true
+      };
+    }
+
     return {
       type: "danger",
-      text: "🚫 今日不可叫貨",
+      text: "🚫 今日臨時休假",
       allowed: false
     };
   }
 
-  // 星期日廠商休息，但可以接單
-  if (day === 0) {
+  // 明天開始臨時休假，今天不收單
+  if (
+    temp.includes(
+      localDateString(addDays(date, 1))
+    )
+  ) {
     return {
-      type: "info",
-      text: `ℹ️ 今日休息，但可以下單安排後續配送${cutoff}`,
+      type: "danger",
+      text: "🚫 明日臨時休假，今天不收單",
+      allowed: false
+    };
+  }
+
+  // 西北、樹森
+  if (vendor.rule === "sunday") {
+    // 星期五提醒備足貨量，但仍可以叫貨
+    if (day === 5) {
+      return {
+        type: "warn",
+        text: `⚠️ 今天是最後備貨提醒日，請備足週末貨量${cutoff}`,
+        allowed: true
+      };
+    }
+
+    // 星期六不收單
+    if (day === 6) {
+      return {
+        type: "danger",
+        text: "🚫 今日不可叫貨",
+        allowed: false
+      };
+    }
+
+    // 星期日休息，但可以接單安排後續配送
+    if (day === 0) {
+      return {
+        type: "info",
+        text: `ℹ️ 今日休息，但可以下單安排後續配送${cutoff}`,
+        allowed: true
+      };
+    }
+
+    return {
+      type: "ok",
+      text: `✅ 今日可正常叫貨${cutoff}`,
+      allowed: true
+    };
+  }
+
+  // 客惟您
+  if (vendor.rule === "customerice") {
+    if (day === 2) {
+      return {
+        type: "danger",
+        text: "🚫 客惟您星期二不可叫貨",
+        allowed: false
+      };
+    }
+
+    return {
+      type: "ok",
+      text: "✅ 今日可正常叫貨",
+      allowed: true
+    };
+  }
+
+  // 總部
+  if (vendor.rule === "headquarters") {
+    if (day === 0 || day === 4) {
+      return {
+        type: "ok",
+        text: "✅ 今日可向總部叫貨",
+        allowed: true
+      };
+    }
+
+    return {
+      type: "danger",
+      text: "🚫 總部僅星期日、星期四可叫貨",
+      allowed: false
+    };
+  }
+
+  // 統賀
+  if (vendor.rule === "holiday") {
+    // 星期五、星期六不收單
+    if (day === 5 || day === 6) {
+      return {
+        type: "danger",
+        text: "🚫 統賀星期五、星期六不能叫貨",
+        allowed: false
+      };
+    }
+
+    // 國定假日休息
+    if (APP_DATA.tongheClosures.includes(ds)) {
+      return {
+        type: "danger",
+        text: "🚫 今日國定假日休息",
+        allowed: false
+      };
+    }
+
+    // 國定假日前兩天提醒
+    if (
+      APP_DATA.tongheClosures.includes(
+        localDateString(addDays(date, 2))
+      )
+    ) {
+      return {
+        type: "warn",
+        text: "⚠️ 國定假日前兩天，請備足休假貨量",
+        allowed: true
+      };
+    }
+
+    return {
+      type: "ok",
+      text: "✅ 今日可正常叫貨",
+      allowed: true
+    };
+  }
+
+  // 宏鑫、何仙姑：完全依環南市場休市表
+  if (vendor.rule === "huannan") {
+    const closed = APP_DATA.huannanClosures;
+
+    // 今天是環南市場休市日
+    if (closed.includes(ds)) {
+      // 休市最後一天＝明天開工，因此今天可以叫貨
+      if (isLastDayOfClosure(date, closed)) {
+        return {
+          type: "info",
+          text: `ℹ️ 今日為休市最後一天，可下單安排後續配送${cutoff}`,
+          allowed: true
+        };
+      }
+
+      // 仍在連續休市期間
+      return {
+        type: "danger",
+        text: "🚫 今日環南市場休市，尚未到休市最後一天",
+        allowed: false
+      };
+    }
+
+    // 明天開始休市，因此今天不收單
+    if (
+      closed.includes(
+        localDateString(addDays(date, 1))
+      )
+    ) {
+      return {
+        type: "danger",
+        text: "🚫 明日環南市場休市，今天不收單",
+        allowed: false
+      };
+    }
+
+    return {
+      type: "ok",
+      text: `✅ 今日可正常叫貨${cutoff}`,
       allowed: true
     };
   }
 
   return {
     type: "ok",
-    text: `✅ 今日可正常叫貨${cutoff}`,
+    text: "✅ 今日可正常叫貨",
     allowed: true
   };
-}
-  if(vendor.rule==="customerice"){
-    if(day===2)return{type:"danger",text:"🚫 客惟您星期二不可叫貨",allowed:false};
-    return{type:"ok",text:"✅ 今日可正常叫貨",allowed:true};
-  }
-  if(vendor.rule==="headquarters")return(day===0||day===4)?{type:"ok",text:"✅ 今日可向總部叫貨",allowed:true}:{type:"danger",text:"🚫 總部僅星期日、星期四可叫貨",allowed:false};
-  if(vendor.rule==="holiday"){
-    if(APP_DATA.tongheClosures.includes(ds))return{type:"danger",text:"🚫 今日國定假日休息",allowed:false};
-    if(APP_DATA.tongheClosures.includes(localDateString(addDays(date,2))))return{type:"warn",text:"⚠️ 國定假日前兩天，請備足休假貨量",allowed:true};
-    return{type:"ok",text:"✅ 今日可正常叫貨",allowed:true};
-  }
-  if(vendor.rule==="huannan"){
-    const closed=APP_DATA.huannanClosures;
-    if(closed.includes(ds)){if(isLastDayOfClosure(date,closed))return{type:"info",text:`ℹ️ 今日為休市最後一天，可下單安排後續配送${cutoff}`,allowed:true};return{type:"danger",text:"🚫 今日環南市場休市",allowed:false}}
-    if(closed.includes(localDateString(addDays(date,1))))return{type:"danger",text:"🚫 明日環南市場休市，今天不收單",allowed:false};
-    return{type:"ok",text:`✅ 今日可正常叫貨${cutoff}`,allowed:true};
-  }
-  return{type:"ok",text:"✅ 今日可正常叫貨",allowed:true};
-}
-function renderDashboard(){const date=getSelectedDate();$("dashboard").innerHTML=Object.keys(APP_DATA.vendors).map(v=>{const s=vendorStatus(v,date);return `<div class="dash-item ${s.type}"><b>${escapeHtml(v)}</b><br>${escapeHtml(s.text.replace(/^[^ ]+ /,""))}</div>`}).join("")}
-function renderStores(){const box=$("storeButtons");box.innerHTML="";Object.entries(APP_DATA.stores).forEach(([key,obj])=>{const b=document.createElement("button");b.className="store-button"+(state.store===key?" active":"");b.textContent=obj.name;b.onclick=()=>{saveCurrentInputs();state.store=key;localStorage.setItem("baoshen_store",key);$("messageOutput").value="";renderAll()};box.appendChild(b)})}
+}function renderStores(){const box=$("storeButtons");box.innerHTML="";Object.entries(APP_DATA.stores).forEach(([key,obj])=>{const b=document.createElement("button");b.className="store-button"+(state.store===key?" active":"");b.textContent=obj.name;b.onclick=()=>{saveCurrentInputs();state.store=key;localStorage.setItem("baoshen_store",key);$("messageOutput").value="";renderAll()};box.appendChild(b)})}
 function renderVendors(){const box=$("vendorButtons");box.innerHTML="";Object.keys(APP_DATA.vendors).forEach(name=>{const b=document.createElement("button");b.className="vendor-button"+(state.vendor===name?" active":"");b.textContent=name;b.onclick=()=>{saveCurrentInputs();state.vendor=name;localStorage.setItem("baoshen_vendor",name);$("messageOutput").value="";$("imageSection").classList.add("hidden");renderAll()};box.appendChild(b)})}
 function renderDateAndNotice(){const d=getSelectedDate(),wd=["日","一","二","三","四","五","六"][d.getDay()];$("dateSummary").textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（星期${wd}）｜${effectiveProfile()==="holiday"?"假日建議":"平日建議"}`;const s=vendorStatus();$("vendorNotice").innerHTML=`<div class="notice ${s.type}">${s.text}</div>`;renderDashboard()}
 function saveCurrentInputs(){document.querySelectorAll(".quantity").forEach(i=>localStorage.setItem(quantityKey(i.dataset.itemName),String(Math.max(0,Number(i.value)||0))))}
@@ -284,7 +430,24 @@ if (vendor.header === "vendor")
 
   return message;
 }
-async function copyMessage(){if(!$("messageOutput").value.trim())generateMessage();if(!$("messageOutput").value.trim())return;try{await navigator.clipboard.writeText($("messageOutput").value)}catch{$("messageOutput").select();document.execCommand("copy")}showToast("已複製，可以貼到 LINE")}
+function clearCurrent() {
+  const confirmed = confirm(
+    `確定清空「${storeLabel(state.store)}・${state.vendor}」嗎？`
+  );
+
+  if (!confirmed) return;
+
+  allItems().forEach((item) => {
+    localStorage.setItem(
+      quantityKey(item.name),
+      "0"
+    );
+  });
+
+  $("messageOutput").value = "";
+  renderItems();
+  showToast("已清空");
+}async function copyMessage(){if(!$("messageOutput").value.trim())generateMessage();if(!$("messageOutput").value.trim())return;try{await navigator.clipboard.writeText($("messageOutput").value)}catch{$("messageOutput").select();document.execCommand("copy")}showToast("已複製，可以貼到 LINE")}
 function saveHistory(){if(!$("messageOutput").value.trim())generateMessage();if(!$("messageOutput").value.trim())return;const h=JSON.parse(localStorage.getItem("baoshen_history")||"[]");h.unshift({store:state.store,vendor:state.vendor,time:new Date().toLocaleString("zh-TW"),text:$("messageOutput").value});localStorage.setItem("baoshen_history",JSON.stringify(h.slice(0,50)));renderHistory();if(confirm("紀錄已儲存。是否完成此次叫貨並清空本廠商數量？")){allItems().forEach(i=>localStorage.setItem(quantityKey(i.name),"0"));renderItems()}showToast("已儲存叫貨紀錄")}
 function renderHistory(){const box=$("history"),h=JSON.parse(localStorage.getItem("baoshen_history")||"[]");if(!h.length){box.innerHTML='<div class="empty">目前沒有叫貨紀錄</div>';return}box.innerHTML=h.map(r=>`<div class="history-item"><div class="history-top"><div class="history-title">${escapeHtml(storeLabel(r.store))}・${escapeHtml(r.vendor)}</div><div class="history-time">${escapeHtml(r.time)}</div></div><div class="history-text">${escapeHtml(r.text)}</div></div>`).join("")}
 function findItem(name){return allItems("宏鑫").find(i=>i.name===name)}
