@@ -14,7 +14,7 @@ const APP_DATA = {
       {name:"梅花豬",unit:"條",note:"對切",weekday:6,holiday:6},{name:"精選雞",unit:"條",note:"對切",weekday:2,holiday:2},{name:"精選羊",unit:"條",note:"對切",weekday:3,holiday:3},{name:"松阪豬",unit:"條",note:"對切",weekday:1,holiday:1},{name:"雪花羊",unit:"條",note:"對切",weekday:1,holiday:1},{name:"菲力豬",unit:"條",weekday:2,holiday:2}
     ]}]},
     "樹森": {rule:"sunday",header:"helloTomorrow",footer:"感謝",groups:[{title:"肉品",items:[
-      {name:"霜降牛",unit:"條",note:"十字切",weekday:1,holiday:1},{name:"小肥牛",unit:"條",note:"十字切",weekday:5,holiday:5},{name:"培根豬",unit:"條",note:"十字切",weekday:1,holiday:1},{name:"莎朗牛",unit:"條",note:"對切",weekday:4,holiday:4},{name:"板腱牛",unit:"條",note:"對切",weekday:2,holiday:2},{name:"雪花牛",unit:"條",note:"對切（挑小）",weekday:2,holiday:2},{name:"小羔羊",unit:"條",note:"對切",weekday:1,holiday:1},{name:"牛小排",unit:"條",weekday:1,holiday:1},{name:"A5和牛",unit:"條",weekday:2,holiday:2},{name:"去骨雞腿",unit:"件",weekday:1,holiday:1}
+      {name:"霜降牛",unit:"條",note:"十字切",weekday:1,holiday:1},{name:"小肥牛",unit:"條",note:"十字切",weekday:5,holiday:5},{name:"培根豬",unit:"條",note:"十字切",weekday:1,holiday:1},{name:"沙朗牛",unit:"條",note:"對切",weekday:4,holiday:4},{name:"板腱牛",unit:"條",note:"對切",weekday:2,holiday:2},{name:"雪花牛",unit:"條",note:"對切（挑小）",weekday:2,holiday:2},{name:"小羔羊",unit:"條",note:"對切",weekday:1,holiday:1},{name:"牛小排",unit:"條",weekday:1,holiday:1},{name:"A5和牛",unit:"條",weekday:2,holiday:2},{name:"去骨雞腿",unit:"件",weekday:1,holiday:1}
     ]}]},
     "何仙姑": {rule:"huannan",cutoff:"10:30",header:"store",footer:"謝謝",groups:[{title:"菇類",items:[
       {name:"香菇",unit:"斤",weekday:1,holiday:1},{name:"金針菇",unit:"包",weekday:3,holiday:3},{name:"杏鮑菇",unit:"包",weekday:3,holiday:3},{name:"木耳",unit:"斤",weekday:10,holiday:10}
