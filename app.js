@@ -19,12 +19,40 @@ function vendorStatus(vendorName=state.vendor,date=getSelectedDate()){
   const temp=holidays(vendorName);
   if(temp.includes(ds)){if(isLastDayOfClosure(date,temp))return{type:"info",text:`ℹ️ 臨時休假最後一天，可下單安排後續配送${cutoff}`,allowed:true};return{type:"danger",text:"🚫 今日臨時休假",allowed:false}}
   if(temp.includes(localDateString(addDays(date,1))))return{type:"danger",text:"🚫 明日臨時休假，今天不收單",allowed:false};
-  if(vendor.rule==="sunday"){
-    if(day===0)return{type:"danger",text:"🚫 今日休息",allowed:false};
-    if(day===5)return{type:"warn",text:`⚠️ 今天是最後叫貨日，請備足週末貨量${cutoff}`,allowed:true};
-    if(day===6)return{type:"danger",text:"🚫 今日不可叫貨，週五為最後叫貨日",allowed:false};
-    return{type:"ok",text:`✅ 今日可正常叫貨${cutoff}`,allowed:true};
+  if (vendor.rule === "sunday") {
+  // 星期五提醒備足週末貨量
+  if (day === 5) {
+    return {
+      type: "warn",
+      text: `⚠️ 今天是最後叫貨日，請備足週末貨量${cutoff}`,
+      allowed: true
+    };
   }
+
+  // 星期六完全不能叫貨
+  if (day === 6) {
+    return {
+      type: "danger",
+      text: "🚫 今日不可叫貨",
+      allowed: false
+    };
+  }
+
+  // 星期日廠商休息，但可以接單
+  if (day === 0) {
+    return {
+      type: "info",
+      text: `ℹ️ 今日休息，但可以下單安排後續配送${cutoff}`,
+      allowed: true
+    };
+  }
+
+  return {
+    type: "ok",
+    text: `✅ 今日可正常叫貨${cutoff}`,
+    allowed: true
+  };
+}
   if(vendor.rule==="customerice"){
     if(day===2)return{type:"danger",text:"🚫 客惟您星期二不可叫貨",allowed:false};
     return{type:"ok",text:"✅ 今日可正常叫貨",allowed:true};
