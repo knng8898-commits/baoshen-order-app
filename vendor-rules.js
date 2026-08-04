@@ -88,8 +88,8 @@
 
       if (day === 0) {
         return status(
-          "info",
-          `ℹ️ 今日休息，但可以下單安排後續配送${cutoff}`,
+          "ok",
+          `✅ 今日可正常叫貨${cutoff}`,
           true
         );
       }
