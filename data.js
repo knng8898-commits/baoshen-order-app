@@ -20,6 +20,16 @@ const APP_DATA = {
       {name:"香菇",unit:"斤",weekday:1,holiday:1},{name:"金針菇",unit:"包",weekday:3,holiday:3},{name:"杏鮑菇",unit:"包",weekday:3,holiday:3},{name:"木耳",unit:"斤",weekday:10,holiday:10}
     ]}]},
     "宏鑫": {rule:"huannan",cutoff:"10:30",header:"store",footer:"謝謝",image:true,
+      itemRules:{
+        "高麗菜":{step:10},
+        "絞肉(綜合)":{step:6,quantityFormat:"repeatStep"},
+        "青菜":{vendorName:"青菜（5斤一包）"},
+        "素乾金針":{step:0.5,quantityFormat:"halfJin",quantityIncludesUnit:true},
+        "素高麗菜乾":{step:0.5,quantityFormat:"halfJin",quantityIncludesUnit:true},
+        "素香菇絲":{step:0.5,quantityFormat:"halfJin",quantityIncludesUnit:true},
+        "小乾香菇":{step:0.5,quantityFormat:"halfJin",quantityIncludesUnit:true},
+        "鳥蛋":{step:0.5,quantityFormat:"halfJin",quantityIncludesUnit:true}
+      },
       routeOrder:["高麗菜","泡菜","素高湯(大)","素乾金針","素高麗菜乾","素香菇絲","小乾香菇","鳥蛋","青菜","玉米筍","鴨血","大黃瓜","南瓜","白蘿蔔","山粉圓","蒟蒻絲","豆皮卷(1袋5小包)","海帶結","豆干","素火腿","素火鍋料","台一三角豆腐","白毛肚","黑毛肚","魚下巴","排骨酥","蟹肉棒","蛋餃","金利華魚包蛋","福茂大貢丸","豬血糕(1包5小片)","鮮蚵(乾)","蛤蜊(大)","豆腐","薑絲","小豆苗","麵條(5斤)","青蔥","蒜泥","蘿蔔泥","去頭朝天辣椒","仙草","絞肉(綜合)","杏鮑菇","金針菇","木耳","香菇","整支青蔥","肥絞肉"],
       imageLeft:["高麗菜","大黃瓜","青菜","南瓜","鴨血","豆腐","仙草","薑絲","青蔥","白蘿蔔","紅蘿蔔","蒜泥","蘿蔔泥","去頭朝天辣椒","玉米筍","小豆苗","豆干","海帶結","台一三角豆腐","絲瓜","黑柿番茄","玉米條","麵條(5斤)","排骨酥","蟹肉棒","蛋餃","金利華魚包蛋","福茂大貢丸"],
       imageRight:["鮮蚵(乾)","蛤蜊(大)","鳥蛋","榨菜","豬血糕(1包5小片)","豆皮卷(1袋5小包)","木耳","香菇","杏鮑菇","金針菇","泡菜","絞肉(綜合)","肥絞肉","山粉圓","素高湯(大)","素火腿","蒟蒻絲","素乾金針","素高麗菜乾","素香菇絲","素火鍋料","整支青蔥","白毛肚","黑毛肚","魚下巴","小乾香菇"],
