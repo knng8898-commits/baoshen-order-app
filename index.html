@@ -9,6 +9,10 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="styles.css?v=4.0.0">
+  <style>
+    .quick-actions{position:fixed;left:50%;bottom:0;z-index:900;transform:translateX(-50%);display:flex;gap:9px;width:min(900px,100%);padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:#ffffffee;border-top:1px solid var(--line);box-shadow:0 -4px 16px #00000014;backdrop-filter:blur(10px)}
+    .quick-actions button{flex:1}.app{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+  </style>
   <title>寶神叫貨助手 v4</title>
 </head>
 <body>
@@ -37,6 +41,7 @@
     <div class="section-title">廠商快速切換</div>
     <div class="vendor-grid" id="vendorButtons"></div>
     <div id="vendorNotice"></div>
+    <div id="stockAlert" class="hidden"></div>
   </section>
 
   <section class="card">
@@ -67,6 +72,7 @@
 
   <section class="card">
     <div class="history-header"><div class="section-title">最近叫貨紀錄</div><button id="clearHistory">清除紀錄</button></div>
+    <div id="historyAnalytics"></div>
     <div id="history"></div>
   </section>
 
@@ -91,9 +97,14 @@
     </details>
   </section>
 </main>
+<nav class="quick-actions" aria-label="快速操作">
+  <button id="quickGenerateText" class="primary">產生 LINE 文字</button>
+  <button id="quickGenerateImage">產生訂貨圖片</button>
+</nav>
 <div id="toast" class="toast"></div>
-<script src="data.js?v=4.0.0"></script>
-<script src="app.js?v=4.0.0"></script>
-<script src="vendor-rules.js?v=5.0.0"></script>
+<script src="data.js?v=5.1.0"></script>
+<script src="app.js?v=5.1.0"></script>
+<script src="history-analytics.js?v=5.1.0"></script>
+<script src="vendor-rules.js?v=5.1.0"></script>
 </body>
 </html>

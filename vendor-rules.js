@@ -1,223 +1,152 @@
-/*
- * 寶神叫貨助手 v5－廠商叫貨規則
- *
- * 每個廠商保留自己的固定規則，並共用：
- * 1. 管理者新增的臨時休假。
- * 2. 自動計算「明日不可叫貨，請備足幾天貨量」。
- *
- * 計算方式：從明天開始，一直算到下一個可叫貨日，並包含該日。
- */
-
+/* 寶神叫貨助手 v5－所有廠商叫貨與配送規則 */
 (function () {
   "use strict";
 
-  const MAX_LOOKAHEAD_DAYS = 45;
+  const MAX_LOOKAHEAD_DAYS = 60;
 
-  function dateKey(date) {
-    return localDateString(date);
+  const dateKey = date => localDateString(date);
+  const nextDate = (date, days = 1) => addDays(date, days);
+  const cutoffText = vendor => vendor?.cutoff ? `，截止 ${vendor.cutoff}` : "";
+  const status = (type, text, allowed) => ({ type, text, allowed });
+  const holidayKey = vendorName => `baoshen_holidays_${vendorName}`;
+  function holidays(vendorName) {
+    try { return JSON.parse(localStorage.getItem(holidayKey(vendorName)) || "[]"); }
+    catch { return []; }
+  }
+  const temporaryClosures = vendorName => holidays(vendorName);
+
+  function recurringClosed(vendor, date) {
+    const day = date.getDay();
+    if (vendor.rule === "sunday") return day === 6;
+    if (vendor.rule === "customerice") return day === 2;
+    if (vendor.rule === "headquarters") return day !== 0 && day !== 4;
+    if (vendor.rule === "holiday") return day === 5 || day === 6;
+    return false;
   }
 
-  function nextDate(date, days = 1) {
-    return addDays(date, days);
+  function calendarClosures(vendor, date) {
+    const key = dateKey(date);
+    if (vendor.rule === "holiday") return APP_DATA.tongheClosures || [];
+    if (vendor.rule === "huannan") return APP_DATA.huannanClosures || [];
+    return [];
   }
 
-  function cutoffText(vendor) {
-    return vendor?.cutoff ? `，截止 ${vendor.cutoff}` : "";
+  function closureReason(vendorName, date) {
+    const vendor = APP_DATA.vendors[vendorName];
+    if (!vendor) return "missing";
+    const key = dateKey(date);
+    if (temporaryClosures(vendorName).includes(key)) return "temporary";
+    if (calendarClosures(vendor, date).includes(key)) {
+      return vendor.rule === "huannan" ? "huannan" : "holiday";
+    }
+    if (recurringClosed(vendor, date)) return "recurring";
+    return null;
   }
 
-  function status(type, text, allowed) {
-    return { type, text, allowed };
+  function isServiceClosed(vendorName, date) {
+    return Boolean(closureReason(vendorName, date));
   }
 
-  function isLastClosedDay(date, closedDates) {
-    return (
-      closedDates.includes(dateKey(date)) &&
-      !closedDates.includes(dateKey(nextDate(date)))
-    );
+  function isLastClosedDay(vendorName, date) {
+    return isServiceClosed(vendorName, date) && !isServiceClosed(vendorName, nextDate(date));
   }
 
-  function getTemporaryClosureStatus(vendorName, date, cutoff) {
-    const closedDates = holidays(vendorName);
-    const today = dateKey(date);
-    const tomorrow = dateKey(nextDate(date));
+  function isReopeningEve(vendorName, date) {
+    return isLastClosedDay(vendorName, date);
+  }
 
-    if (closedDates.includes(today)) {
-      if (isLastClosedDay(date, closedDates)) {
-        return status(
-          "info",
-          `ℹ️ 臨時休假最後一天，可下單安排後續配送${cutoff}`,
-          true
-        );
+  function isLastOrderDay(vendorName, date) {
+    return getBaseStatus(vendorName, date).allowed && !getBaseStatus(vendorName, nextDate(date)).allowed;
+  }
+
+  function getNextServiceDate(vendorName, date) {
+    for (let offset = 1; offset <= MAX_LOOKAHEAD_DAYS; offset += 1) {
+      const candidate = nextDate(date, offset);
+      if (!isServiceClosed(vendorName, candidate)) return { date: candidate, days: offset };
+    }
+    return null;
+  }
+
+  function getStockDays(vendorName, date) {
+    if (getBaseStatus(vendorName, nextDate(date)).allowed) return 0;
+    for (let offset = 2; offset <= MAX_LOOKAHEAD_DAYS; offset += 1) {
+      if (getBaseStatus(vendorName, nextDate(date, offset)).allowed) return offset;
+    }
+    return 0;
+  }
+
+  function closedStatus(vendorName, date) {
+    const vendor = APP_DATA.vendors[vendorName];
+    const reason = closureReason(vendorName, date);
+    const cutoff = cutoffText(vendor);
+
+    if (reason === "temporary") {
+      if (isReopeningEve(vendorName, date)) {
+        return status("info", `ℹ️ 臨時休假最後一天，可下單安排後續配送${cutoff}`, true);
       }
-
       return status("danger", "🚫 今日臨時休假", false);
     }
 
-    if (closedDates.includes(tomorrow)) {
-      return status("danger", "🚫 明日臨時休假，今天不收單", false);
+    if (reason === "huannan") {
+      if (isReopeningEve(vendorName, date)) {
+        return status("info", `ℹ️ 今日為休市最後一天，可下單安排後續配送${cutoff}`, true);
+      }
+      return status("danger", "🚫 今日環南市場休市", false);
     }
 
-    return null;
+    if (vendor.rule === "customerice") {
+      return status("danger", "🚫 客惟您星期二不可叫貨", false);
+    }
+    if (vendor.rule === "headquarters") {
+      return status("danger", "🚫 總部僅星期日、星期四可叫貨", false);
+    }
+    if (vendor.rule === "holiday") {
+      return reason === "holiday"
+        ? status("danger", "🚫 今日國定假日休息", false)
+        : status("danger", "🚫 統賀星期五、星期六不能叫貨", false);
+    }
+    return status("danger", "🚫 今日不可叫貨", false);
   }
 
   function getBaseStatus(vendorName, date) {
     const vendor = APP_DATA.vendors[vendorName];
-
-    if (!vendor) {
-      return status("danger", "🚫 找不到廠商資料", false);
+    if (!vendor) return status("danger", "🚫 找不到廠商資料", false);
+    if (isServiceClosed(vendorName, date)) return closedStatus(vendorName, date);
+    if (vendor.rule === "huannan" && isServiceClosed(vendorName, nextDate(date))) {
+      return status("danger", "🚫 明日環南市場休市，今天不收單", false);
     }
-
-    const day = date.getDay();
-    const today = dateKey(date);
-    const tomorrow = dateKey(nextDate(date));
-    const cutoff = cutoffText(vendor);
-
-    const temporaryStatus = getTemporaryClosureStatus(
-      vendorName,
-      date,
-      cutoff
-    );
-
-    if (temporaryStatus) return temporaryStatus;
-
-    // 西北、樹森：星期六不能叫貨；星期日休息但可以接單。
-    if (vendor.rule === "sunday") {
-      if (day === 6) {
-        return status("danger", "🚫 今日不可叫貨", false);
-      }
-
-      if (day === 0) {
-        return status(
-          "ok",
-          `✅ 今日可正常叫貨${cutoff}`,
-          true
-        );
-      }
-
-      return status("ok", `✅ 今日可正常叫貨${cutoff}`, true);
-    }
-
-    // 客惟您：星期二不能叫貨；星期三可以叫貨及交貨。
-    if (vendor.rule === "customerice") {
-      if (day === 2) {
-        return status("danger", "🚫 客惟您星期二不可叫貨", false);
-      }
-
-      return status("ok", "✅ 今日可正常叫貨", true);
-    }
-
-    // 總部：僅星期日、星期四可叫貨。
-    if (vendor.rule === "headquarters") {
-      if (day === 0 || day === 4) {
-        return status("ok", "✅ 今日可向總部叫貨", true);
-      }
-
-      return status(
-        "danger",
-        "🚫 總部僅星期日、星期四可叫貨",
-        false
-      );
-    }
-
-    // 統賀：星期五、星期六不能叫貨，另套用國定假日。
-    if (vendor.rule === "holiday") {
-      if (day === 5 || day === 6) {
-        return status(
-          "danger",
-          "🚫 統賀星期五、星期六不能叫貨",
-          false
-        );
-      }
-
-      if (APP_DATA.tongheClosures.includes(today)) {
-        return status("danger", "🚫 今日國定假日休息", false);
-      }
-
-      return status("ok", "✅ 今日可正常叫貨", true);
-    }
-
-    // 宏鑫、何仙姑：完全共用環南市場休市表。
-    if (vendor.rule === "huannan") {
-      const closedDates = APP_DATA.huannanClosures;
-
-      if (closedDates.includes(today)) {
-        if (isLastClosedDay(date, closedDates)) {
-          return status(
-            "info",
-            `ℹ️ 今日為休市最後一天，可下單安排後續配送${cutoff}`,
-            true
-          );
-        }
-
-        return status(
-          "danger",
-          "🚫 今日環南市場休市，尚未到休市最後一天",
-          false
-        );
-      }
-
-      if (closedDates.includes(tomorrow)) {
-        return status(
-          "danger",
-          "🚫 明日環南市場休市，今天不收單",
-          false
-        );
-      }
-
-      return status("ok", `✅ 今日可正常叫貨${cutoff}`, true);
-    }
-
-    return status("ok", `✅ 今日可正常叫貨${cutoff}`, true);
+    if (vendor.rule === "headquarters") return status("ok", "✅ 今日可向總部叫貨", true);
+    return status("ok", `✅ 今日可正常叫貨${cutoffText(vendor)}`, true);
   }
 
   function getUpcomingWarning(vendorName, date) {
-    const tomorrowStatus = getBaseStatus(vendorName, nextDate(date));
-
-    if (tomorrowStatus.allowed) return null;
-
-    for (let offset = 2; offset <= MAX_LOOKAHEAD_DAYS; offset += 1) {
-      const checkStatus = getBaseStatus(
-        vendorName,
-        nextDate(date, offset)
-      );
-
-      if (checkStatus.allowed) {
-        return status(
-          "warn",
-          `⚠️ 明日不可叫貨，請備足${offset}天貨量${cutoffText(
-            APP_DATA.vendors[vendorName]
-          )}`,
-          true
-        );
-      }
-    }
-
-    return status(
-      "warn",
-      "⚠️ 明日不可叫貨，請確認後續休假與配送安排",
-      true
-    );
+    const days = getStockDays(vendorName, date);
+    return days > 0
+      ? status("warn", `⚠️ 明日不可叫貨，請備足${days}天貨量`, true)
+      : null;
   }
 
-  function getVendorStatus(
-    vendorName = state.vendor,
-    date = getSelectedDate()
-  ) {
-    const baseStatus = getBaseStatus(vendorName, date);
-
-    if (!baseStatus.allowed) return baseStatus;
-
-    return getUpcomingWarning(vendorName, date) || baseStatus;
+  function getVendorStatus(vendorName = state.vendor, date = getSelectedDate()) {
+    const base = getBaseStatus(vendorName, date);
+    if (!base.allowed) return base;
+    return getUpcomingWarning(vendorName, date) || base;
   }
 
   window.vendorStatus = getVendorStatus;
+  window.holidayKey = holidayKey;
+  window.holidays = holidays;
   window.BaoshenVendorRules = {
+    closureReason,
+    isServiceClosed,
+    isLastClosedDay,
+    isReopeningEve,
+    isLastOrderDay,
+    getNextServiceDate,
+    getStockDays,
     getBaseStatus,
     getUpcomingWarning,
     getVendorStatus
   };
 
-  if (typeof renderAll === "function") {
-    renderAll();
-  }
+  if (typeof renderAll === "function") renderAll();
 })();
