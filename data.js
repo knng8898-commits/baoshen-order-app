@@ -127,7 +127,7 @@ huannanClosures: [
     ]}]},
     "宏鑫": {rule:"huannan",cutoff:"10:30",header:"store",footer:"謝謝",image:true,
       itemRules:{
-        "高麗菜":{step:10},
+        "高麗菜":{step:10,directInput:true},
         "絞肉(綜合)":{step:6,quantityFormat:"repeatStep"},
         "青菜":{vendorName:"青菜（5斤一包）"},
         "素乾金針":{step:0.5,quantityFormat:"halfJin",quantityIncludesUnit:true},

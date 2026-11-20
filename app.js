@@ -12,6 +12,7 @@ function quantityKey(itemName) { return `baoshen_${state.mode}_${state.store}_${
 const itemRule = item => APP_DATA.vendors[state.vendor].itemRules?.[item.name] || {};
 const itemStep = item => Number(itemRule(item).step) || 1;
 function normalizeQuantity(item, quantity) { const q = Math.max(0, Number(quantity) || 0), step = itemStep(item); return itemRule(item).step ? Math.floor(q / step) * step : q }
+function snapQuantity(item, quantity) { const q = Math.max(0, Number(quantity) || 0), step = itemStep(item); return itemRule(item).step ? Math.round(q / step) * step : q }
 function formatQuantity(item, quantity) { const q = normalizeQuantity(item, quantity), rule = itemRule(item); if (rule.quantityFormat === "repeatStep" && q > 0) return Array(q / itemStep(item)).fill(itemStep(item)).join("+"); if (rule.quantityFormat === "halfJin") { if (q === 0) return "0"; const whole = Math.floor(q), half = q % 1 === 0.5; return whole ? `${whole}斤${half ? "半" : ""}` : "半斤" } return String(q) }
 function formatQuantityWithUnit(item, quantity) { const rule = itemRule(item), separator = rule.quantityFormat === "repeatStep" ? " " : ""; return `${formatQuantity(item, quantity)}${rule.quantityIncludesUnit ? "" : separator + item.unit}` }
 function formatImageQuantity(item, quantity) { const q = normalizeQuantity(item, quantity); return itemRule(item).quantityFormat === "halfJin" ? (q === 0.5 ? "半" : String(q)) : formatQuantity(item, q) }
@@ -62,7 +63,7 @@ function renderStores() {
   });
 }
   function renderVendors() { const box = $("vendorButtons"); box.innerHTML = ""; Object.keys(APP_DATA.vendors).forEach(name => { const b = document.createElement("button"); b.className = "vendor-button" + (state.vendor === name ? " active" : ""); b.textContent = name; b.onclick = () => { saveCurrentInputs(); state.vendor = name; localStorage.setItem("baoshen_vendor", name); $("messageOutput").value = ""; $("imageSection").classList.add("hidden"); renderAll() }; box.appendChild(b) }) }
-  function renderDateAndNotice() { const d = getSelectedDate(), wd = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()]; $("dateSummary").textContent = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（星期${wd}）｜${effectiveProfile() === "holiday" ? "假日建議" : "平日建議"}`; const s = vendorStatus(); $("vendorNotice").innerHTML = `<div class="notice ${s.type}">${s.text}</div>`; renderDashboard() }
+  function renderDateAndNotice() { const d = getSelectedDate(), wd = t("weekDays").split(",")[d.getDay()]; $("dateSummary").textContent = currentLanguage() === "vi" ? `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} (${wd})｜${t(effectiveProfile() === "holiday" ? "holidayProfile" : "weekdayProfile")}` : `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（星期${wd}）｜${t(effectiveProfile() === "holiday" ? "holidayProfile" : "weekdayProfile")}`; const s = vendorStatus(); $("vendorNotice").innerHTML = `<div class="notice ${s.type}">${s.text}</div>`; renderDashboard() }
   function saveCurrentInputs() { document.querySelectorAll(".quantity").forEach(i => localStorage.setItem(quantityKey(i.dataset.itemName), String(Math.max(0, Number(i.dataset.quantity ?? i.value) || 0)))) }
   function renderStockAlert() {
     const box = $("stockAlert");
@@ -77,7 +78,7 @@ function renderStores() {
     ).length;
     box.classList.toggle("hidden", zeroCount === 0);
     box.innerHTML = zeroCount > 0
-      ? `<div class="notice warn">⚠️ 今日有 ${zeroCount} 項商品庫存為 0，請確認是否缺貨。</div>`
+      ? `<div class="notice warn">${escapeHtml(t("zeroAlert", { count: zeroCount }))}</div>`
       : "";
   }
 
@@ -109,15 +110,15 @@ function renderStores() {
         let suggestedDisplay = "";
         if (item.weekday !== undefined || item.holiday !== undefined) {
           suggestedDisplay = state.vendor === "宏鑫"
-            ? `<div class="item-suggested"><div>平日建議庫存：${escapeHtml(formatQuantityWithUnit(item, weekdayTarget))}</div><div>假日建議庫存：${escapeHtml(formatQuantityWithUnit(item, holidayTarget))}</div></div>`
-            : `<div class="item-suggested">建議庫存：${escapeHtml(formatQuantityWithUnit(item, target))}</div>`;
+            ? `<div class="item-suggested"><div>${escapeHtml(t("weekdaySuggested"))}：${escapeHtml(formatQuantityWithUnit(item, weekdayTarget))}</div><div>${escapeHtml(t("holidaySuggested"))}：${escapeHtml(formatQuantityWithUnit(item, holidayTarget))}</div></div>`
+            : `<div class="item-suggested">${escapeHtml(t("suggested"))}：${escapeHtml(formatQuantityWithUnit(item, target))}</div>`;
         }
 
         info.innerHTML = `
           <div class="item-name">${escapeHtml(item.name)}</div>
-          <div class="item-meta">單位：${escapeHtml(item.unit)}${item.note ? "・" + escapeHtml(item.note) : ""}</div>
+          <div class="item-meta">${escapeHtml(t("unit"))}：${escapeHtml(item.unit)}${item.note ? "・" + escapeHtml(item.note) : ""}</div>
           ${suggestedDisplay}
-          ${state.mode === "inventory" && saved === 0 ? '<div class="item-warning">請確認：目前庫存為 0</div>' : ""}
+          ${state.mode === "inventory" && saved === 0 ? `<div class="item-warning">${escapeHtml(t("zeroItem"))}</div>` : ""}
         `;
 
         const stepper = document.createElement("div");
@@ -127,16 +128,18 @@ function renderStores() {
         const plus = document.createElement("button");
         const increment = itemStep(item);
         const hasCustomStep = Boolean(itemRule(item).step);
+        const directInput = Boolean(itemRule(item).directInput);
 
         minus.textContent = "−";
         plus.textContent = "+";
-        input.type = hasCustomStep ? "text" : "number";
+        input.type = hasCustomStep && !directInput ? "text" : "number";
         input.min = "0";
+        input.step = String(increment);
         input.className = "quantity";
         input.dataset.itemName = item.name;
         input.dataset.quantity = saved;
         input.value = formatQuantity(item, saved);
-        input.readOnly = hasCustomStep;
+        input.readOnly = hasCustomStep && !directInput;
 
         const update = delta => {
           const value = Math.max(0, (Number(input.dataset.quantity) || 0) + delta);
@@ -147,25 +150,26 @@ function renderStores() {
         minus.onclick = () => update(-increment);
         plus.onclick = () => update(increment);
 
-        if (!hasCustomStep) {
+        if (!hasCustomStep || directInput) {
           input.oninput = () => {
             input.dataset.quantity = String(Math.max(0, Number(input.value) || 0));
             localStorage.setItem(quantityKey(item.name), input.dataset.quantity);
             renderStockAlert();
           };
           input.onchange = () => {
-            input.dataset.quantity = String(Math.max(0, Number(input.value) || 0));
-            input.value = input.dataset.quantity;
+            input.dataset.quantity = String(directInput ? snapQuantity(item, input.value) : Math.max(0, Number(input.value) || 0));
+            input.value = formatQuantity(item, input.dataset.quantity);
             localStorage.setItem(quantityKey(item.name), input.dataset.quantity);
             renderItems();
           };
+          input.onkeydown = event => { if (event.key === "Enter") input.blur(); };
         }
 
         stepper.append(minus, input, plus);
         if (state.mode === "inventory") {
           const result = document.createElement("div");
           result.className = "order-result";
-          result.textContent = `叫 ${formatQuantityWithUnit(item, Math.max(0, target - saved))}`;
+          result.textContent = `${t("order")} ${formatQuantityWithUnit(item, Math.max(0, target - saved))}`;
           stepper.appendChild(result);
         }
         row.append(info, stepper);
@@ -190,7 +194,7 @@ function renderStores() {
     saveCurrentInputs();
 
     if (!vendorStatus().allowed) {
-      showToast("今日不可叫貨");
+      showToast(t("unavailableToday"));
       return "";
     }
 
@@ -306,7 +310,7 @@ function renderStores() {
 
     if (!sections.length) {
       $("messageOutput").value = "";
-      showToast("目前沒有需要叫貨的品項");
+      showToast(t("noOrder"));
       return "";
     }
 
@@ -316,7 +320,7 @@ function renderStores() {
       `${vendor.footer}`;
 
     $("messageOutput").value = message;
-    showToast("已產生 LINE 訊息");
+    showToast(t("generatedLine"));
 
     return message;
   }
@@ -337,23 +341,40 @@ function renderStores() {
     $("messageOutput").value = "";
     renderItems();
     showToast("已清空");
-  } async function copyMessage() { if (!$("messageOutput").value.trim()) generateMessage(); if (!$("messageOutput").value.trim()) return; try { await navigator.clipboard.writeText($("messageOutput").value) } catch { $("messageOutput").select(); document.execCommand("copy") } showToast("已複製，可以貼到 LINE") }
+  } async function copyMessage() { if (!$("messageOutput").value.trim()) generateMessage(); if (!$("messageOutput").value.trim()) return; try { await navigator.clipboard.writeText($("messageOutput").value) } catch { $("messageOutput").select(); document.execCommand("copy") } showToast(t("copied")) }
   function saveHistory() { if (!$("messageOutput").value.trim()) generateMessage(); if (!$("messageOutput").value.trim()) return; const now = new Date(), h = JSON.parse(localStorage.getItem("baoshen_history") || "[]"), items = allItems().map(item => ({ name: item.name, quantity: orderQuantity(item), unit: item.unit })).filter(item => item.quantity > 0); h.unshift({ store: state.store, vendor: state.vendor, createdAt: now.toISOString(), time: now.toLocaleString("zh-TW"), text: $("messageOutput").value, items }); localStorage.setItem("baoshen_history", JSON.stringify(h.slice(0, 500))); renderHistory(); if (confirm("紀錄已儲存。是否完成此次叫貨並清空本廠商數量？")) { allItems().forEach(i => localStorage.setItem(quantityKey(i.name), "0")); renderItems() } showToast("已儲存叫貨紀錄") }
   function renderHistory() { const box = $("history"), h = JSON.parse(localStorage.getItem("baoshen_history") || "[]"); box.innerHTML = h.length ? h.map(r => `<div class="history-item"><div class="history-top"><div class="history-title">${escapeHtml(storeLabel(r.store))}・${escapeHtml(r.vendor)}</div><div class="history-time">${escapeHtml(r.time)}</div></div><div class="history-text">${escapeHtml(r.text)}</div></div>`).join("") : '<div class="empty">目前沒有叫貨紀錄</div>'; window.BaoshenHistoryAnalytics?.render($("historyAnalytics"), state.vendor) }
   function findItem(name) { return allItems("宏鑫").find(i => i.name === name) }
   function generateImage() {
-    if (state.vendor !== "宏鑫") { showToast("只有宏鑫使用訂貨明細表圖片"); return } if (!vendorStatus().allowed) { showToast("今日不可叫貨"); return }
+    if (state.vendor !== "宏鑫") { showToast(t("onlyHongxin")); return } if (!vendorStatus().allowed) { showToast(t("unavailableToday")); return }
     const c = $("orderCanvas"), ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H); ctx.fillStyle = "#111"; ctx.textAlign = "center"; ctx.font = 'bold 48px "PingFang TC",sans-serif'; ctx.fillText("宏鑫 訂貨明細表", W / 2, 62); ctx.textAlign = "left"; ctx.font = '30px "PingFang TC",sans-serif'; const store = APP_DATA.stores[state.store]; ctx.fillText(`店名：${store.name}（${store.address}）`, 25, 112);
     const top = 160, margin = 16, gap = 0, colW = (W - margin * 2) / 2, rowH = 48;
     function drawColumn(names, x) {
       const nameW = colW * .58, qtyW = colW * .25, unitW = colW - nameW - qtyW; let y = top; ctx.fillStyle = "#ddd"; ctx.fillRect(x, y, colW, rowH); ctx.strokeStyle = "#111"; ctx.lineWidth = 2; ctx.strokeRect(x, y, colW, rowH); ctx.beginPath(); ctx.moveTo(x + nameW, y); ctx.lineTo(x + nameW, y + rowH); ctx.moveTo(x + nameW + qtyW, y); ctx.lineTo(x + nameW + qtyW, y + rowH); ctx.stroke(); ctx.fillStyle = "#111"; ctx.textAlign = "center"; ctx.font = 'bold 28px "PingFang TC",sans-serif'; ctx.fillText("品名", x + nameW / 2, y + 34); ctx.fillText("數量", x + nameW + qtyW / 2, y + 34); ctx.fillText("單位", x + nameW + qtyW + unitW / 2, y + 34); y += rowH;
       names.forEach(name => { const item = findItem(name), q = item ? orderQuantity(item) : 0, displayName = item ? vendorItemName(item) : name, unit = item?.unit || ({ "紅蘿蔔": "斤", "榨菜": "包", "絲瓜": "條", "黑柿番茄": "顆", "玉米條": "斤" }[name] || ""); ctx.strokeRect(x, y, colW, rowH); ctx.beginPath(); ctx.moveTo(x + nameW, y); ctx.lineTo(x + nameW, y + rowH); ctx.moveTo(x + nameW + qtyW, y); ctx.lineTo(x + nameW + qtyW, y + rowH); ctx.stroke(); ctx.fillStyle = "#111"; ctx.textAlign = "left"; ctx.font = `${displayName.length > 10 ? 21 : 25}px "PingFang TC",sans-serif`; ctx.fillText(displayName, x + 8, y + 33); ctx.textAlign = "center"; ctx.fillStyle = "#b44"; ctx.font = 'bold 29px "PingFang TC",sans-serif'; if (q > 0) ctx.fillText(formatImageQuantity(item, q), x + nameW + qtyW / 2, y + 34); ctx.fillStyle = "#111"; ctx.font = '25px "PingFang TC",sans-serif'; ctx.fillText(unit, x + nameW + qtyW + unitW / 2, y + 33); y += rowH })
     }
-    drawColumn(APP_DATA.vendors["宏鑫"].imageLeft, margin); drawColumn(APP_DATA.vendors["宏鑫"].imageRight, margin + colW + gap); ctx.textAlign = "left"; ctx.fillStyle = "#111"; ctx.font = '25px "PingFang TC",sans-serif'; ctx.fillText("傳真：82525624　電話：22539609　手機：0989263550　陳皓鑫", 25, H - 35); $("imageSection").classList.remove("hidden"); $("imageSection").scrollIntoView({ behavior: "smooth" }); showToast("已產生宏鑫訂貨明細表")
+    drawColumn(APP_DATA.vendors["宏鑫"].imageLeft, margin); drawColumn(APP_DATA.vendors["宏鑫"].imageRight, margin + colW + gap); ctx.textAlign = "left"; ctx.fillStyle = "#111"; ctx.font = '25px "PingFang TC",sans-serif'; ctx.fillText("傳真：82525624　電話：22539609　手機：0989263550　陳皓鑫", 25, H - 35); $("imageSection").classList.remove("hidden"); $("imageSection").scrollIntoView({ behavior: "smooth" }); showToast(t("generatedImage"))
   }
   const canvasBlob = () => new Promise(resolve => $("orderCanvas").toBlob(resolve, "image/png"));
-  async function downloadImage() { const b = await canvasBlob(), a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `宏鑫叫貨_${APP_DATA.stores[state.store].short}_${localDateString()}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500) }
-  async function shareImage() { const b = await canvasBlob(), f = new File([b], `宏鑫叫貨_${APP_DATA.stores[state.store].short}.png`, { type: "image/png" }); if (navigator.share && navigator.canShare?.({ files: [f] })) await navigator.share({ files: [f], title: "宏鑫叫貨" }); else showToast("此瀏覽器不支援直接分享，請按儲存圖片") }
+  function downloadBlob(blob, filename) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000) }
+  async function downloadImage() { downloadBlob(await canvasBlob(), `宏鑫叫貨_${APP_DATA.stores[state.store].short}_${localDateString()}.png`) }
+  async function shareImage() {
+    const blob = await canvasBlob();
+    const filename = `宏鑫叫貨_${APP_DATA.stores[state.store].short}.png`;
+    const file = new File([blob], filename, { type: "image/png", lastModified: Date.now() });
+    try {
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+        await navigator.share({ files: [file], title: "宏鑫叫貨" });
+        return;
+      }
+      downloadBlob(blob, filename);
+      showToast(t("imageDownloaded"));
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      downloadBlob(blob, filename);
+      showToast(t("shareFailed"));
+    }
+  }
   function fillAdminSelectors() { const stores = Object.entries(APP_DATA.stores).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join(""), vendors = Object.keys(APP_DATA.vendors).map(v => `<option>${v}</option>`).join(""); $("adminStore").innerHTML = stores; $("adminVendor").innerHTML = vendors; $("holidayVendor").innerHTML = vendors; $("adminStore").value = state.store; $("adminVendor").value = state.vendor; $("holidayVendor").value = state.vendor; renderSuggestedEditor(); renderHolidayList() }
   function renderSuggestedEditor() { const s = $("adminStore").value, v = $("adminVendor").value; $("suggestedEditor").innerHTML = allItems(v).map(i => `<div class="admin-item"><b>${escapeHtml(i.name)} <small>${escapeHtml(i.unit)}</small></b><input class="suggest-weekday" data-name="${escapeHtml(i.name)}" type="number" min="0" value="${suggested(i, s, v, "weekday")}" title="平日"><input class="suggest-holiday" data-name="${escapeHtml(i.name)}" type="number" min="0" value="${suggested(i, s, v, "holiday")}" title="假日"></div>`).join(""); $("suggestedEditor").insertAdjacentHTML("afterbegin", '<div class="admin-item"><b>品名</b><b>平日</b><b>假日</b></div>') }
   function renderHolidayList() { const v = $("holidayVendor").value, arr = holidays(v); $("holidayList").innerHTML = arr.length ? arr.map(d => `<div class="holiday-item"><b>${d}</b><button class="danger" data-remove-date="${d}">刪除</button></div>`).join("") : '<div class="empty">目前沒有臨時休假</div>'; document.querySelectorAll("[data-remove-date]").forEach(b => b.onclick = () => { localStorage.setItem(holidayKey(v), JSON.stringify(arr.filter(x => x !== b.dataset.removeDate))); renderHolidayList(); renderAll(); showToast("已刪除") }) }
@@ -361,7 +382,7 @@ function renderStores() {
   function renderAll() { renderStores(); renderVendors(); renderDateAndNotice(); renderItems(); renderHistory() }
   $("workDate").value = localDateString(); $("stockProfile").value = state.profile; $("workDate").onchange = () => { renderDateAndNotice(); renderItems() }; $("stockProfile").onchange = () => { state.profile = $("stockProfile").value; localStorage.setItem("baoshen_profile", state.profile); renderDateAndNotice(); renderItems() };
   $("orderMode").onclick = () => { saveCurrentInputs(); state.mode = "order"; localStorage.setItem("baoshen_mode", state.mode); renderItems() }; $("inventoryMode").onclick = () => { saveCurrentInputs(); state.mode = "inventory"; localStorage.setItem("baoshen_mode", state.mode); renderItems() };
-  $("generateText").onclick = generateMessage; $("generateImage").onclick = generateImage; $("quickGenerateText").onclick = generateMessage; $("quickGenerateImage").onclick = generateImage; $("clearCurrent").onclick = clearCurrent; $("copyMessage").onclick = copyMessage; $("saveHistory").onclick = saveHistory; $("downloadImage").onclick = downloadImage; $("shareImage").onclick = shareImage; $("clearHistory").onclick = () => { if (confirm("確定清除所有叫貨紀錄嗎？")) { localStorage.removeItem("baoshen_history"); renderHistory(); showToast("已清除") } };
+  $("generateText").onclick = generateMessage; $("generateImage").onclick = generateImage; $("quickGenerateText").onclick = generateMessage; $("quickGenerateImage").onclick = generateImage; $("languageToggle").onclick = toggleLanguage; $("clearCurrent").onclick = clearCurrent; $("copyMessage").onclick = copyMessage; $("saveHistory").onclick = saveHistory; $("downloadImage").onclick = downloadImage; $("shareImage").onclick = shareImage; $("clearHistory").onclick = () => { if (confirm("確定清除所有叫貨紀錄嗎？")) { localStorage.removeItem("baoshen_history"); renderHistory(); showToast("已清除") } };
   $("unlockAdmin").onclick = () => { if ($("adminPassword").value === (localStorage.getItem("baoshen_admin_password") || "8888")) { sessionStorage.setItem("baoshen_admin", "1"); $("adminLogin").classList.add("hidden"); $("adminPanel").classList.remove("hidden"); fillAdminSelectors(); showToast("管理設定已解鎖") } else showToast("密碼錯誤") }; $("lockAdmin").onclick = () => { sessionStorage.removeItem("baoshen_admin"); $("adminPanel").classList.add("hidden"); $("adminLogin").classList.remove("hidden") }; $("changePassword").onclick = () => { const p = prompt("輸入新密碼（至少 4 碼）"); if (p && p.length >= 4) { localStorage.setItem("baoshen_admin_password", p); showToast("密碼已修改") } else if (p !== null) showToast("密碼至少 4 碼") };
   $("adminStore").onchange = renderSuggestedEditor; $("adminVendor").onchange = renderSuggestedEditor; $("saveSuggested").onclick = () => { const s = $("adminStore").value, v = $("adminVendor").value; document.querySelectorAll(".suggest-weekday").forEach(i => localStorage.setItem(suggestedKey(s, v, i.dataset.name, "weekday"), String(Math.max(0, Number(i.value) || 0)))); document.querySelectorAll(".suggest-holiday").forEach(i => localStorage.setItem(suggestedKey(s, v, i.dataset.name, "holiday"), String(Math.max(0, Number(i.value) || 0)))); renderItems(); showToast("建議庫存已儲存") }; $("resetSuggested").onclick = () => { if (!confirm("恢復此門市、此廠商的預設建議庫存？")) return; const s = $("adminStore").value, v = $("adminVendor").value; allItems(v).forEach(i => ["weekday", "holiday"].forEach(p => localStorage.removeItem(suggestedKey(s, v, i.name, p)))); renderSuggestedEditor(); renderItems(); showToast("已恢復預設") };
   $("holidayVendor").onchange = renderHolidayList; $("addHoliday").onclick = () => { const v = $("holidayVendor").value, d = $("holidayDate").value; if (!d) return showToast("請先選擇日期"); localStorage.setItem(holidayKey(v), JSON.stringify([...new Set([...holidays(v), d])].sort())); renderHolidayList(); renderAll(); showToast("已新增臨時休假") };

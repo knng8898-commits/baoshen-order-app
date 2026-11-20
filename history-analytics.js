@@ -106,26 +106,26 @@
     if (!container) return;
     const result = analyze(vendorName, now);
     if (!result.items.length) {
-      container.innerHTML = `<div class="empty">${escapeHtml(vendorName)}最近 30 天尚無可分析的商品紀錄</div>`;
+      container.innerHTML = `<div class="empty">${escapeHtml(vendorName)}・${escapeHtml(t("noStats"))}</div>`;
       return;
     }
 
     const itemSummary = result.items.map(item => `
       <div class="history-item">
         <div class="history-title">${escapeHtml(item.name)}</div>
-        <div class="history-text">平均：${escapeHtml(amount(item.average, item.unit))}　最大：${escapeHtml(amount(item.maximum, item.unit))}　最小：${escapeHtml(amount(item.minimum, item.unit))}　最近一次：${escapeHtml(amount(item.latest, item.unit))}</div>
+        <div class="history-text">${escapeHtml(t("average"))}：${escapeHtml(amount(item.average, item.unit))}　${escapeHtml(t("maximum"))}：${escapeHtml(amount(item.maximum, item.unit))}　${escapeHtml(t("minimum"))}：${escapeHtml(amount(item.minimum, item.unit))}　${escapeHtml(t("latest"))}：${escapeHtml(amount(item.latest, item.unit))}</div>
       </div>
     `).join("");
 
     const ranking = result.top.map((item, index) =>
-      `<div class="history-text">TOP ${index + 1}　${escapeHtml(item.name)}　${item.count} 次</div>`
+      `<div class="history-text">TOP ${index + 1}　${escapeHtml(item.name)}　${escapeHtml(t("times", { count: item.count }))}</div>`
     ).join("");
 
     container.innerHTML = `
-      <div class="section-title">最近 30 天統計・${escapeHtml(vendorName)}</div>
-      <div class="helper">共 ${result.records} 筆叫貨紀錄</div>
+      <div class="section-title">${escapeHtml(t("recentStats"))}・${escapeHtml(vendorName)}</div>
+      <div class="helper">${escapeHtml(t("recordsCount", { count: result.records }))}</div>
       ${itemSummary}
-      <div class="history-item"><div class="history-title">常叫商品排行</div>${ranking}</div>
+      <div class="history-item"><div class="history-title">${escapeHtml(t("ranking"))}</div>${ranking}</div>
     `;
   }
 

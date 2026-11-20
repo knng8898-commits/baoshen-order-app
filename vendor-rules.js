@@ -6,8 +6,9 @@
 
   const dateKey = date => localDateString(date);
   const nextDate = (date, days = 1) => addDays(date, days);
-  const cutoffText = vendor => vendor?.cutoff ? `，截止 ${vendor.cutoff}` : "";
+  const cutoffText = vendor => vendor?.cutoff ? (window.currentLanguage?.() === "vi" ? `, hạn chót ${vendor.cutoff}` : `，截止 ${vendor.cutoff}`) : "";
   const status = (type, text, allowed) => ({ type, text, allowed });
+  const tr = (key, vars) => window.t ? window.t(key, vars) : key;
   const holidayKey = vendorName => `baoshen_holidays_${vendorName}`;
   function holidays(vendorName) {
     try { return JSON.parse(localStorage.getItem(holidayKey(vendorName)) || "[]"); }
@@ -82,47 +83,47 @@
 
     if (reason === "temporary") {
       if (isReopeningEve(vendorName, date)) {
-        return status("info", `ℹ️ 臨時休假最後一天，可下單安排後續配送${cutoff}`, true);
+        return status("info", tr("ruleTemporaryLast", { cutoff }), true);
       }
-      return status("danger", "🚫 今日臨時休假", false);
+      return status("danger", tr("ruleTemporaryClosed"), false);
     }
 
     if (reason === "huannan") {
       if (isReopeningEve(vendorName, date)) {
-        return status("info", `ℹ️ 今日為休市最後一天，可下單安排後續配送${cutoff}`, true);
+        return status("info", tr("ruleHuannanLast", { cutoff }), true);
       }
-      return status("danger", "🚫 今日環南市場休市", false);
+      return status("danger", tr("ruleHuannanClosed"), false);
     }
 
     if (vendor.rule === "customerice") {
-      return status("danger", "🚫 客惟您星期二不可叫貨", false);
+      return status("danger", tr("ruleCustomerIce"), false);
     }
     if (vendor.rule === "headquarters") {
-      return status("danger", "🚫 總部僅星期日、星期四可叫貨", false);
+      return status("danger", tr("ruleHeadquartersClosed"), false);
     }
     if (vendor.rule === "holiday") {
       return reason === "holiday"
-        ? status("danger", "🚫 今日國定假日休息", false)
-        : status("danger", "🚫 統賀星期五、星期六不能叫貨", false);
+        ? status("danger", tr("ruleTongheHoliday"), false)
+        : status("danger", tr("ruleTongheClosed"), false);
     }
-    return status("danger", "🚫 今日不可叫貨", false);
+    return status("danger", tr("ruleClosed"), false);
   }
 
   function getBaseStatus(vendorName, date) {
     const vendor = APP_DATA.vendors[vendorName];
-    if (!vendor) return status("danger", "🚫 找不到廠商資料", false);
+    if (!vendor) return status("danger", tr("ruleMissing"), false);
     if (isServiceClosed(vendorName, date)) return closedStatus(vendorName, date);
     if (vendor.rule === "huannan" && isServiceClosed(vendorName, nextDate(date))) {
-      return status("danger", "🚫 明日環南市場休市，今天不收單", false);
+      return status("danger", tr("ruleHuannanTomorrow"), false);
     }
-    if (vendor.rule === "headquarters") return status("ok", "✅ 今日可向總部叫貨", true);
-    return status("ok", `✅ 今日可正常叫貨${cutoffText(vendor)}`, true);
+    if (vendor.rule === "headquarters") return status("ok", tr("ruleHeadquartersOpen"), true);
+    return status("ok", tr("ruleOpen", { cutoff: cutoffText(vendor) }), true);
   }
 
   function getUpcomingWarning(vendorName, date) {
     const days = getStockDays(vendorName, date);
     return days > 0
-      ? status("warn", `⚠️ 明日不可叫貨，請備足${days}天貨量`, true)
+      ? status("warn", tr("ruleStockDays", { days }), true)
       : null;
   }
 
